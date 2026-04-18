@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { BookingItem, CampgroundItem } from "../../interface";
 import AdminBookingList from "./AdminBookingList";
+import AdminCampgroundList from "./AdminCampgroundList";
 
 export default function AdminPanel({
   bookings,
@@ -43,6 +44,9 @@ export default function AdminPanel({
 
       {activeTab === "bookings" && (
         <AdminBookingList bookings={bookings} token={token} />
+      )}
+      {activeTab === "campgrounds" && (
+        <AdminCampgroundList campgrounds={campgrounds} token={token} />
       )}
     </div>
   );
