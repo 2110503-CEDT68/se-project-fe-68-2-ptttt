@@ -5,7 +5,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import getMyBookings from "@/libs/getMyBookings";
 import getUserProfile from "@/libs/getUserProfile";
-import { MapPin, Phone } from "lucide-react";
+import { MapPin, Phone, Star } from "lucide-react";
+// TODO: Uncomment when API is ready - will cause error if getReviewStats doesn't exist yet
+// import getReviewStats from "@/libs/getReviewStats";
 
 export default async function CampgroundDetailPage({
   params,
@@ -15,6 +17,31 @@ export default async function CampgroundDetailPage({
   const resolvedParams = await params;
   const campgroundResponse = await getCampground(resolvedParams.cid);
   const campground = campgroundResponse.data;
+
+  // TODO: Uncomment when API is ready - will cause error if backend endpoint doesn't exist yet
+  // Fetch review statistics from API
+  // const reviewStatsResponse = await getReviewStats(resolvedParams.cid);
+  // const stats = reviewStatsResponse.data;
+
+  // TEMPORARY: Mock data for development (remove when API is ready)
+  const stats = {
+    averageRating: 4.3,
+    totalReviews: 24,
+    starBreakdown: {
+      5: 13,
+      4: 7,
+      3: 2,
+      2: 1,
+      1: 1,
+    },
+    percentageBreakdown: {
+      5: 54,
+      4: 29,
+      3: 10,
+      2: 4,
+      1: 3,
+    },
+  };
 
   const session = await getServerSession(authOptions);
   let alreadyBooked = false;
@@ -52,6 +79,23 @@ export default async function CampgroundDetailPage({
     );
   }
 
+  // Rating data - will automatically use real data when API is connected
+  // Using count instead of percentage
+  const ratingData = [
+    { stars: 5, count: stats.starBreakdown[5] },
+    { stars: 4, count: stats.starBreakdown[4] },
+    { stars: 3, count: stats.starBreakdown[3] },
+    { stars: 2, count: stats.starBreakdown[2] },
+    { stars: 1, count: stats.starBreakdown[1] },
+  ];
+
+  // Calculate percentage for progress bar width
+  const maxCount = Math.max(...ratingData.map(item => item.count));
+  const ratingDataWithPercentage = ratingData.map(item => ({
+    ...item,
+    barWidth: maxCount > 0 ? (item.count / maxCount) * 100 : 0
+  }));
+
   return (
     <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto space-y-8">
@@ -79,6 +123,58 @@ export default async function CampgroundDetailPage({
             <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-100 mb-6">
               {campground.name}
             </h1>
+
+            {/* Rating Overview Section */}
+            <div className="mb-8 bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 sm:p-8">
+              <div>This mock data</div>
+              <div>waiting for API</div>
+              <div className="flex flex-col sm:flex-row items-start gap-8">
+                {/* Left Side - Average Rating */}
+                <div className="text-center sm:text-left">
+                  <div className="text-6xl font-semibold text-slate-100 mb-2">
+                    {stats.averageRating.toFixed(1)}
+                  </div>
+                  <div className="flex gap-1 mb-2 justify-center sm:justify-start">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`w-6 h-6 ${
+                          star <= Math.round(stats.averageRating)
+                            ? "fill-orange-400 text-orange-400"
+                            : "text-slate-600"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <div className="text-sm text-slate-400">
+                    {stats.totalReviews} {stats.totalReviews === 1 ? "review" : "reviews"}
+                  </div>
+                </div>
+
+                {/* Right Side - Star Breakdown Bars */}
+                <div className="flex-1 w-full space-y-3">
+                  {ratingDataWithPercentage.map((item) => (
+                    <div key={item.stars} className="flex items-center gap-3">
+                      <div className="flex items-center gap-1 w-12">
+                        <span className="text-sm text-slate-300">
+                          {item.stars}
+                        </span>
+                        <Star className="w-4 h-4 fill-orange-400 text-orange-400" />
+                      </div>
+                      <div className="flex-1 h-3 bg-slate-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-orange-400 transition-all duration-300"
+                          style={{ width: `${item.barWidth}%` }}
+                        ></div>
+                      </div>
+                      <div className="text-sm text-slate-400 w-12 text-right">
+                        {item.count}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
 
             <div className="space-y-4">
               {/* Address */}
