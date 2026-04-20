@@ -27,6 +27,7 @@ export default function AdminCampgroundList({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmDeleteName, setConfirmDeleteName] = useState("");
+  const [confirmDeleteInput, setConfirmDeleteInput] = useState("");
   const [newName, setNewName] = useState("");
   const [newAddress, setNewAddress] = useState("");
   const [newTel, setNewTel] = useState("");
@@ -82,10 +83,11 @@ export default function AdminCampgroundList({
   const handleDelete = (id: string, name: string) => {
     setConfirmDeleteId(id);
     setConfirmDeleteName(name);
+    setConfirmDeleteInput("");
   };
 
   const handleConfirmDelete = async () => {
-    if (!confirmDeleteId) return;
+    if (!confirmDeleteId || confirmDeleteInput !== confirmDeleteName) return;
     const id = confirmDeleteId;
     const name = confirmDeleteName;
     setConfirmDeleteId(null);
@@ -242,7 +244,7 @@ export default function AdminCampgroundList({
       {confirmDeleteId && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-          onClick={(e) => { if (e.target === e.currentTarget) setConfirmDeleteId(null); }}
+          onClick={(e) => { if (e.target === e.currentTarget) { setConfirmDeleteId(null); setConfirmDeleteInput(""); } }}
         >
           <div className="w-full max-w-sm mx-4 bg-slate-900 border border-slate-700 rounded-2xl p-6 space-y-4">
             <div className="flex flex-col items-center text-center gap-3">
@@ -252,22 +254,30 @@ export default function AdminCampgroundList({
               <div>
                 <h2 className="text-lg font-bold text-white">Delete Campground</h2>
                 <p className="text-sm text-slate-400 mt-1">
-                  Are you sure you want to delete{" "}
-                  <span className="text-white font-medium">"{confirmDeleteName}"</span>?
-                  <br />This action cannot be undone.
+                  This action cannot be undone. Please type{" "}
+                  <span className="text-white font-medium">"{confirmDeleteName}"</span>{" "}
+                  to confirm.
                 </p>
               </div>
             </div>
+            <input
+              type="text"
+              placeholder="Type campground name to confirm"
+              value={confirmDeleteInput}
+              onChange={(e) => setConfirmDeleteInput(e.target.value)}
+              className="w-full bg-slate-800 text-slate-100 rounded-lg px-3 py-2.5 text-sm border border-slate-700 focus:outline-none focus:border-red-400 transition-colors placeholder:text-slate-600"
+            />
             <div className="flex gap-3 pt-1">
               <button
-                onClick={() => setConfirmDeleteId(null)}
+                onClick={() => { setConfirmDeleteId(null); setConfirmDeleteInput(""); }}
                 className="flex-1 px-4 py-2.5 rounded-xl border border-slate-700 text-slate-400 text-sm hover:bg-slate-800 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmDelete}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+                disabled={confirmDeleteInput !== confirmDeleteName}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-red-600"
               >
                 <Trash2 size={14} /> Delete
               </button>
