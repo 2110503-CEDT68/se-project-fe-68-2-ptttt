@@ -131,7 +131,7 @@ export default async function CampgroundDetailPage({
               <div className="flex flex-col sm:flex-row items-start gap-8">
                 {/* Left Side - Average Rating */}
                 <div className="text-center sm:text-left">
-                  <div className="text-6xl font-semibold text-slate-100 mb-2">
+                  <div className="text-6xl font-extrabold text-slate-100 mb-2">
                     {stats.averageRating.toFixed(1)}
                   </div>
                   <div className="flex gap-1 mb-2 justify-center sm:justify-start">
