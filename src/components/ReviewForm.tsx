@@ -59,12 +59,23 @@ export default function ReviewForm() {
             value={comment}
             onChange={handleCommentChange}
             placeholder="Share your experience at this campground"
-            rows={4}
+            rows={7}
             className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent resize-none"
           />
         </div>
 
-        {/* TODO: Add submit button when API is ready */}
+        <div className="mt-5 ml-1 text-xs text-slate-500 text-left ">
+          {comment.length} / 300
+        </div>
+
+        {/* Post Review Button need to add functionality to send data to backend */}
+        <div className="mt-4 flex justify-end">
+          <button
+            className="px-6 py-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-md transition-colors"
+          >
+            Post Review
+          </button>
+        </div>
       </div>
     </div>
   );
