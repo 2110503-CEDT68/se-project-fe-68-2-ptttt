@@ -6,6 +6,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import getMyBookings from "@/libs/getMyBookings";
 import getUserProfile from "@/libs/getUserProfile";
 import { MapPin, Phone, Star } from "lucide-react";
+import ReviewForm from "@/components/ReviewForm";
 // TODO: Uncomment when API is ready - will cause error if getReviewStats doesn't exist yet
 // import getReviewStats from "@/libs/getReviewStats";
 
@@ -175,6 +176,7 @@ export default async function CampgroundDetailPage({
                 </div>
               </div>
             </div>
+            <div className="mt-10 pt-8 border-t border-slate-700/50"></div>
 
             <div className="space-y-4">
               {/* Address */}
@@ -215,6 +217,10 @@ export default async function CampgroundDetailPage({
                 alreadyBooked={alreadyBooked || maxBookingReached}
               />
             </div>
+
+            {/* Rating Form */}
+            <div className="mt-10 pt-8 border-t border-slate-700/50"></div>
+            <ReviewForm />
           </div>
         </div>
       </div>
