@@ -5,6 +5,9 @@ export interface CampgroundItem {
   tel: string;
   picture: string;
   id: string;
+  sumRating:number;
+  countReview:number;
+  ratingCount: number[];
 }
 
 export interface CampgroundJson {

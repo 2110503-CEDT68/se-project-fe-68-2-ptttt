@@ -7,8 +7,6 @@ import getMyBookings from "@/libs/getMyBookings";
 import getUserProfile from "@/libs/getUserProfile";
 import { MapPin, Phone, Star } from "lucide-react";
 import ReviewForm from "@/components/ReviewForm";
-// TODO: Uncomment when API is ready - will cause error if getReviewStats doesn't exist yet
-// import getReviewStats from "@/libs/getReviewStats";
 
 export default async function CampgroundDetailPage({
   params,
@@ -19,28 +17,23 @@ export default async function CampgroundDetailPage({
   const campgroundResponse = await getCampground(resolvedParams.cid);
   const campground = campgroundResponse.data;
 
-  // TODO: Uncomment when API is ready - will cause error if backend endpoint doesn't exist yet
-  // Fetch review statistics from API
-  // const reviewStatsResponse = await getReviewStats(resolvedParams.cid);
-  // const stats = reviewStatsResponse.data;
+  // Calculate average rating and breakdown from campground's stored stats
+  // ratingCount index: 0 = 1-star, 1 = 2-star, ..., 4 = 5-star
+  // fallback to 0 for campgrounds created before rating fields were added
+  const averageRating =
+    campground.countReview > 0
+      ? campground.sumRating / campground.countReview
+      : 0;
 
-  // TEMPORARY: Mock data for development (remove when API is ready)
   const stats = {
-    averageRating: 4.3,
-    totalReviews: 24,
+    averageRating,
+    totalReviews: campground.countReview ?? 0,
     starBreakdown: {
-      5: 13,
-      4: 7,
-      3: 2,
-      2: 1,
-      1: 1,
-    },
-    percentageBreakdown: {
-      5: 54,
-      4: 29,
-      3: 10,
-      2: 4,
-      1: 3,
+      5: campground.ratingCount?.[4] ?? 0,
+      4: campground.ratingCount?.[3] ?? 0,
+      3: campground.ratingCount?.[2] ?? 0,
+      2: campground.ratingCount?.[1] ?? 0,
+      1: campground.ratingCount?.[0] ?? 0,
     },
   };
 
@@ -80,8 +73,7 @@ export default async function CampgroundDetailPage({
     );
   }
 
-  // Rating data - will automatically use real data when API is connected
-  // Using count instead of percentage
+  // Build rating bar data from stats for rendering the breakdown chart
   const ratingData = [
     { stars: 5, count: stats.starBreakdown[5] },
     { stars: 4, count: stats.starBreakdown[4] },
@@ -127,8 +119,7 @@ export default async function CampgroundDetailPage({
 
             {/* Rating Overview Section */}
             <div className="mb-8 bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 sm:p-8">
-              <div>This mock data</div>
-              <div>waiting for API</div>
+    
               <div className="flex flex-col sm:flex-row items-start gap-8">
                 {/* Left Side - Average Rating */}
                 <div className="text-center sm:text-left">

@@ -51,6 +51,12 @@ export default function CampgroundSearch({
               picture={campground.picture}
               address={campground.address}
               tel={campground.tel}
+              averageRating={
+                campground.countReview > 0
+                  ? campground.sumRating / campground.countReview
+                  : 0
+              }
+              totalReviews={campground.countReview}
             />
           </Link>
         ))}

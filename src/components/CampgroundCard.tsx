@@ -1,10 +1,12 @@
-import { MapPin, Phone, Flame } from "lucide-react";
+import { MapPin, Phone, Flame ,Star } from "lucide-react";
 
 export interface CardProps {
   name: string;
   picture: string;
   address: string;
   tel: string;
+  averageRating:number;
+  totalReviews:number;
 }
 
 export default function CampgroundCard({
@@ -12,6 +14,8 @@ export default function CampgroundCard({
   picture,
   address,
   tel,
+  averageRating,
+  totalReviews
 }: CardProps) {
   return (
     <div className="w-full h-full rounded-xl border border-slate-700/50 bg-[#12172a] overflow-hidden hover:border-orange-400/50 hover:-translate-y-1 transition-all duration-300 flex flex-col cursor-pointer">
@@ -25,6 +29,19 @@ export default function CampgroundCard({
         <h3 className="text-xl font-bold text-slate-100 mb-3 line-clamp-1">
           {name}
         </h3>
+
+         {/* เพิ่มส่วนนี้ — rating display */}
+        <div className="flex items-center gap-1 mb-3">
+          <Star className="w-4 h-4 fill-orange-400 text-orange-400" />
+          <span className="text-sm font-semibold text-slate-200">
+            {totalReviews > 0 ? averageRating.toFixed(1) : "No reviews"}
+          </span>
+          {totalReviews > 0 && (
+            <span className="text-xs text-slate-500">
+              ({totalReviews} {totalReviews === 1 ? "review" : "reviews"})
+            </span>
+          )}
+        </div>
 
         {/* Detail Section */}
         <div className="space-y-2 mt-auto">
