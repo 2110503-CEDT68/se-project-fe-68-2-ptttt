@@ -10,7 +10,9 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "cypress": "cypress open",
-    "e2e": "start-server-and-test dev 3000 cypress"
+    "e2e": "start-server-and-test dev 3000 cypress",
+    "playwright": "playwright test",
+    "playwright:ui": "playwright test --ui"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -34,6 +36,7 @@
   },
   "devDependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@playwright/test": "^1.59.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -43,6 +46,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "cypress": "^15.12.0",
+    "dotenv": "^17.4.2",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
     "next": "^16.1.7",
