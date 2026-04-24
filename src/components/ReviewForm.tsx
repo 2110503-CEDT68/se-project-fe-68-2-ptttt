@@ -13,7 +13,7 @@ export default function ReviewForm() {
   };
 
   const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setComment(e.target.value);
+    if (e.target.value.length <= 1000) setComment(e.target.value);
   };
 
   return (
@@ -64,8 +64,8 @@ export default function ReviewForm() {
           />
         </div>
 
-        <div className="mt-5 ml-1 text-xs text-slate-500 text-left ">
-          {comment.length} / 300
+        <div className="mt-5 ml-1 text-xs text-slate-500 text-left">
+          {comment.length} / 1000
         </div>
 
         {/* Post Review Button need to add functionality to send data to backend */}
