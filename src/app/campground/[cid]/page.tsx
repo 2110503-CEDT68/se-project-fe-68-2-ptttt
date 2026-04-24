@@ -40,6 +40,7 @@ export default async function CampgroundDetailPage({
   const session = await getServerSession(authOptions);
   let alreadyBooked = false;
   let maxBookingReached = false;
+  let bookingIdsForCampground: string[] = [];
   if (session?.user?.token) {
     try {
       const profile = await getUserProfile(session.user.token);
@@ -55,6 +56,9 @@ export default async function CampgroundDetailPage({
           (b: any) => b.campground._id === campground._id,
         );
         maxBookingReached = activeBookings.length >= 3;
+        bookingIdsForCampground = res.data
+          .filter((b: any) => b.campground?._id === campground._id)
+          .map((b: any) => b._id);
       }
     } catch {}
   }
@@ -211,7 +215,10 @@ export default async function CampgroundDetailPage({
 
             {/* Rating Form */}
             <div className="mt-10 pt-8 border-t border-slate-700/50"></div>
-            <ReviewForm />
+            <ReviewForm
+              campgroundId={campground._id}
+              bookingIds={bookingIdsForCampground}
+            />
           </div>
         </div>
       </div>
