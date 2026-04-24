@@ -62,7 +62,7 @@ export default function AuthPage() {
     e.preventDefault();
 
     if (registerPassword !== registerConfirmPassword) {
-      toast.success("Passwords do not match");
+      toast.error("Passwords do not match");
       return;
     }
 
