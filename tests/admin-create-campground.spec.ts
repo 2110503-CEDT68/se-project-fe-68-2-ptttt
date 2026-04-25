@@ -5,7 +5,7 @@
  * Prerequisites:
  * - Frontend running at http://localhost:3000
  * - Backend running and connected
- * - Admin account exists: admin@test.com / password123
+ * - Admin account exists: admin@gmail.com / 123456
  */
 
 import { test, expect, Page, request as playwrightRequest } from '@playwright/test';
@@ -18,7 +18,8 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
 const ADMIN_EMAIL = 'admin@gmail.com';
 const ADMIN_PASSWORD = '123456';
 
-// We will fetch and clean up campgrounds matching test names instead of tracking IDs
+// Track campground IDs created during tests for cleanup
+const createdCampgroundIds: string[] = [];
 
 const VALID_CAMPGROUND = {
   name: `Test Camp ${Date.now()}`, // unique name to avoid duplicate
@@ -68,6 +69,43 @@ async function fillCreateForm(
   }
 }
 
+/** Listen for POST /api/v1/campgrounds response and resolve with the created _id.
+ *  Must be called BEFORE the action that triggers the POST request.
+ */
+async function captureCreatedCampgroundId(page: Page): Promise<string | null> {
+  return new Promise<string | null>((resolve) => {
+    let resolved = false;
+
+    const responseHandler = async (response: any) => {
+      if (resolved) return;
+      if (response.url().includes('/api/v1/campgrounds') && response.request().method() === 'POST') {
+        try {
+          const json = await response.json();
+          if (json.success && json.data?._id) {
+            resolved = true;
+            page.off('response', responseHandler);
+            resolve(json.data._id);
+          }
+        } catch {
+          // ignore parse errors
+        }
+      }
+    };
+
+    page.on('response', responseHandler);
+
+    // Timeout after 10 seconds
+    setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        page.off('response', responseHandler);
+        console.warn('captureCreatedCampgroundId: timed out waiting for POST /api/v1/campgrounds response');
+        resolve(null);
+      }
+    }, 10_000);
+  });
+}
+
 // ─── Setup ────────────────────────────────────────────────────────────────────
 
 test.beforeEach(async ({ page }) => {
@@ -78,9 +116,15 @@ test.beforeEach(async ({ page }) => {
 // ─── Cleanup ──────────────────────────────────────────────────────────────────
 
 test.afterAll(async () => {
+  if (createdCampgroundIds.length === 0) {
+    console.log('Cleanup: no campgrounds to delete');
+    return;
+  }
+
+  console.log(`Cleanup: deleting ${createdCampgroundIds.length} campground(s):`, createdCampgroundIds);
+
   const apiContext = await playwrightRequest.newContext();
 
-  // Login to get token
   const loginRes = await apiContext.post(`${BACKEND_URL}/api/v1/auth/login`, {
     data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
   });
@@ -93,18 +137,11 @@ test.afterAll(async () => {
     return;
   }
 
-  // Fetch all campgrounds and delete those created by these tests
-  const getRes = await apiContext.get(`${BACKEND_URL}/api/v1/campgrounds`);
-  const getJson = await getRes.json();
-
-  if (getJson.success && getJson.data) {
-    for (const camp of getJson.data) {
-      if (camp.name.startsWith('Test Camp') || camp.name.startsWith('Duplicate Camp')) {
-        await apiContext.delete(`${BACKEND_URL}/api/v1/campgrounds/${camp._id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      }
-    }
+  for (const id of createdCampgroundIds) {
+    const res = await apiContext.delete(`${BACKEND_URL}/api/v1/campgrounds/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    console.log(`Cleanup: deleted campground ${id} → status ${res.status()}`);
   }
 
   await apiContext.dispose();
@@ -113,14 +150,19 @@ test.afterAll(async () => {
 // ─── TC-1: Create with valid data (Valid) ─────────────────────────────────────
 
 test('TC-1: Create campground with valid data', async ({ page }) => {
+  // Start capturing the API response BEFORE clicking create
+  const idPromise = captureCreatedCampgroundId(page);
 
   await openCreateModal(page);
   await fillCreateForm(page, VALID_CAMPGROUND);
-
   await page.getByRole('button', { name: /create campground/i }).click();
 
   // Toast success should appear
   await expect(page.getByText(/created successfully/i)).toBeVisible();
+
+  // Track created ID for cleanup
+  const id = await idPromise;
+  if (id) createdCampgroundIds.push(id);
 
   // Modal should close
   await expect(page.getByText('Create New Campground')).not.toBeVisible();
@@ -205,11 +247,18 @@ test('TC-5: Missing picture URL field', async ({ page }) => {
 test('TC-6: Duplicate campground name', async ({ page }) => {
   const duplicateName = `Duplicate Camp ${Date.now()}`;
 
+  // Start capturing before the first create
+  const idPromise = captureCreatedCampgroundId(page);
+
   // Create first campground
   await openCreateModal(page);
   await fillCreateForm(page, { ...VALID_CAMPGROUND, name: duplicateName });
   await page.getByRole('button', { name: /create campground/i }).click();
   await expect(page.getByText(/created successfully/i)).toBeVisible();
+
+  // Track created ID for cleanup
+  const id = await idPromise;
+  if (id) createdCampgroundIds.push(id);
 
   // Try to create with same name
   await openCreateModal(page);
