@@ -7,6 +7,8 @@ import getMyBookings from "@/libs/getMyBookings";
 import getUserProfile from "@/libs/getUserProfile";
 import { MapPin, Phone, Star } from "lucide-react";
 import ReviewForm from "@/components/ReviewForm";
+import ReviewList from "@/components/ReviewList";
+import getReviews from "@/libs/getReviews";
 
 export default async function CampgroundDetailPage({
   params,
@@ -16,6 +18,10 @@ export default async function CampgroundDetailPage({
   const resolvedParams = await params;
   const campgroundResponse = await getCampground(resolvedParams.cid);
   const campground = campgroundResponse.data;
+
+  // Fetch reviews for this campground
+  const reviewsResponse = await getReviews(resolvedParams.cid).catch(() => ({ data: [] }));
+  const reviews = reviewsResponse.data ?? [];
 
   // Calculate average rating and breakdown from campground's stored stats
   // ratingCount index: 0 = 1-star, 1 = 2-star, ..., 4 = 5-star
@@ -219,6 +225,11 @@ export default async function CampgroundDetailPage({
               campgroundId={campground._id}
               bookingIds={bookingIdsForCampground}
             />
+
+            {/* Review List */}
+            <div className="mt-8">
+              <ReviewList reviews={reviews} />
+            </div>
           </div>
         </div>
       </div>

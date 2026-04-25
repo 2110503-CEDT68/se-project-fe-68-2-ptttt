@@ -38,3 +38,20 @@ export interface BookingJson {
   count: number;
   data: BookingItem[];
 }
+
+export interface ReviewItem {
+  _id: string;
+  rating: number;
+  comment: string;
+  user: { _id: string; name: string; email: string };
+  campground: string;
+  booking: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReviewJson {
+  success: boolean;
+  count: number;
+  data: ReviewItem[];
+}
