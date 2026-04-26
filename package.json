@@ -28,6 +28,7 @@
     "lucide-react": "^0.577.0",
     "mongoose": "^9.3.0",
     "next-auth": "^4.24.13",
+    "playwright": "^1.59.1",
     "post": "^0.0.1",
     "react-hot-toast": "^2.6.0",
     "react-redux": "^9.2.0",
