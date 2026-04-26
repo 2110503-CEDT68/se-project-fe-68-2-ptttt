@@ -1,27 +1,24 @@
-import { Star } from "lucide-react";
-import { ReviewItem as ReviewItemType } from "../../interface";
+"use client";
 
-// Generate consistent avatar color from name
+import { useState } from "react";
+import { Star, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import { ReviewItem as ReviewItemType } from "../../interface";
+import deleteReview from "@/libs/deleteReview";
+
 function getAvatarColor(name: string) {
   const colors = [
     "bg-orange-500", "bg-blue-500", "bg-green-500",
     "bg-purple-500", "bg-rose-500", "bg-teal-500",
   ];
-  const index = name.charCodeAt(0) % colors.length;
-  return colors[index];
+  return colors[name.charCodeAt(0) % colors.length];
 }
 
-// Get initials from name (e.g. "James T." -> "JT")
 function getInitials(name: string) {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+  return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 }
 
-// Format date to "Mar 2025" style
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-US", {
     month: "short",
@@ -29,27 +26,67 @@ function formatDate(dateStr: string) {
   });
 }
 
-export default function ReviewItem({ review }: { review: ReviewItemType }) {
+export default function ReviewItem({
+  review,
+  currentUserId,
+  token,
+}: {
+  review: ReviewItemType;
+  currentUserId?: string;
+  token?: string;
+}) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
   const name = review.user?.name ?? "Anonymous";
-  const initials = getInitials(name);
-  const avatarColor = getAvatarColor(name);
+  const isOwner = currentUserId && review.user?._id === currentUserId;
+
+  const handleDelete = async () => {
+    if (!confirm("Delete this review?")) return;
+    if (!token) return;
+
+    setLoading(true);
+    try {
+      await deleteReview(token, review._id);
+      toast.success("Review deleted");
+      // update page state without full browser reload
+      router.refresh();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete review");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex gap-4 py-5 border-b border-slate-700/50 last:border-0">
       {/* Avatar */}
       <div
-        className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-white text-sm font-bold ${avatarColor}`}
+        className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-white text-sm font-bold ${getAvatarColor(name)}`}
       >
-        {initials}
+        {getInitials(name)}
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2 mb-1">
           <span className="text-slate-200 font-semibold text-sm">{name}</span>
-          <span className="text-slate-500 text-xs flex-shrink-0">
-            {formatDate(review.createdAt)}
-          </span>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className="text-slate-500 text-xs">
+              {formatDate(review.createdAt)}
+            </span>
+            {/* Delete button — only shown to review owner */}
+            {isOwner && (
+              <button
+                onClick={handleDelete}
+                disabled={loading}
+                className="text-red-500 hover:text-red-400 transition-colors disabled:opacity-40"
+                title="Delete review"
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Stars */}

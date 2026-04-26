@@ -29,6 +29,7 @@ export default async function userLogIn(
 
   return {
     ...data,
+    _id: profile.data._id,
     role: profile.data.role,
     name: profile.data.name,
     email: profile.data.email,

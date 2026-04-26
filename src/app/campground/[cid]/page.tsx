@@ -228,7 +228,11 @@ export default async function CampgroundDetailPage({
 
             {/* Review List */}
             <div className="mt-8">
-              <ReviewList reviews={reviews} />
+              <ReviewList
+                reviews={reviews}
+                currentUserId={session?.user?._id}
+                token={session?.user?.token}
+              />
             </div>
           </div>
         </div>

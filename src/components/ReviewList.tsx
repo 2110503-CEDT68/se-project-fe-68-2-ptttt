@@ -7,7 +7,15 @@ import ReviewItem from "@/components/ReviewItem";
 
 type SortOption = "most_recent" | "highest" | "lowest";
 
-export default function ReviewList({ reviews }: { reviews: ReviewItemType[] }) {
+export default function ReviewList({
+  reviews,
+  currentUserId,
+  token,
+}: {
+  reviews: ReviewItemType[];
+  currentUserId?: string;
+  token?: string;
+}) {
   const [sort, setSort] = useState<SortOption>("most_recent");
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -87,7 +95,12 @@ export default function ReviewList({ reviews }: { reviews: ReviewItemType[] }) {
       {/* Review items */}
       <div>
         {currentReviews.map((review) => (
-          <ReviewItem key={review._id} review={review} />
+          <ReviewItem
+              key={review._id}
+              review={review}
+              currentUserId={currentUserId}
+              token={token}
+            />
         ))}
       </div>
 
