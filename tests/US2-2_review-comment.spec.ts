@@ -29,7 +29,7 @@ const USER_PASSWORD = '123456';
 // accidentally match this campground when all three test files start at
 // the same millisecond.
 const RUN_ID = Date.now();
-const CAMPGROUND_NAME = `CommentFE-${RUN_ID}`;
+const CAMPGROUND_NAME = `Test Comment ${RUN_ID}`;
 
 // ─── Created-resource tracking ───────────────────────────────────────────────
 
@@ -63,9 +63,9 @@ async function apiCreateCampground(api: APIRequestContext, token: string, name: 
     headers: { Authorization: `Bearer ${token}` },
     data: {
       name,
-      address: '123 Forest Road, Chiang Mai',
-      tel: '0812345678',
-      picture: 'https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg',
+      address: 'Songkhla',
+      tel:     '081-234-5678',
+      picture: 'https://tinyurl.com/5n6zfbdv',
     },
   });
   const json = await res.json();
@@ -206,9 +206,9 @@ test.afterAll(async () => {
   }
 });
 
-// ─── TC-1: Submit valid review with comment ──────────────────────────────────
+// ─── TC6-1: Submit valid review with comment (EC-1) ──────────────────────────
 
-test('TC2-1: Post a review with a valid comment', async ({ page }) => {
+test('TC6-1: Post a review with a valid comment', async ({ page }) => {
   await loginUserUI(page);
   await gotoCampgroundDetail(page, campgroundId);
 
@@ -227,9 +227,9 @@ test('TC2-1: Post a review with a valid comment', async ({ page }) => {
   await expect(page.getByText('Lovely place to stay.')).toBeVisible();
 });
 
-// ─── TC-2: Empty comment → button disabled ───────────────────────────────────
+// ─── TC6-2: Empty comment → button disabled (EC-2) ───────────────────────────
 
-test('TC2-2: Empty comment — Post Review button is disabled', async ({ page }) => {
+test('TC6-2: Empty comment — Post Review button is disabled', async ({ page }) => {
   await loginUserUI(page);
   await gotoCampgroundDetail(page, campgroundId);
 
@@ -240,9 +240,9 @@ test('TC2-2: Empty comment — Post Review button is disabled', async ({ page })
   await expect(button).toBeDisabled();
 });
 
-// ─── TC-3: Whitespace-only comment → button disabled ─────────────────────────
+// ─── TC6-3: Whitespace-only comment → button disabled (EC-3) ────────────────
 
-test('TC2-3: Whitespace-only comment — Post Review button is disabled', async ({ page }) => {
+test('TC6-3: Whitespace-only comment — Post Review button is disabled', async ({ page }) => {
   await loginUserUI(page);
   await gotoCampgroundDetail(page, campgroundId);
 
@@ -253,32 +253,33 @@ test('TC2-3: Whitespace-only comment — Post Review button is disabled', async 
   await expect(button).toBeDisabled();
 });
 
-// ─── TC-4: Comment over 1000 chars → input is capped at 1000 ────────────────
+// ─── TC6-4: Comment exceeds 1000 chars → input is capped at 1000 (EC-4) ─────
 
-test('TC2-4: Typing more than 1000 characters is blocked at 1000', async ({ page }) => {
+test('TC6-4: Typing more than 1000 characters is blocked at 1000', async ({ page }) => {
   await loginUserUI(page);
   await gotoCampgroundDetail(page, campgroundId);
 
   await selectStars(page, 4);
 
-  const longText = 'a'.repeat(1000); // try to put 1500 chars in
-  await fillComment(page, longText);
-
-  // The handleCommentChange handler in ReviewForm.tsx silently rejects any
-  // value > 1000, so the textarea ends up holding exactly 1000 chars (or
-  // possibly 0 if the whole paste was rejected). Either way the value must
-  // never exceed 1000 and the counter must display "<=1000 / 1000".
   const textarea = page.getByPlaceholder('Share your experience at this campground');
+
+  // Fill exactly 1000 chars first, then type one more character
+  await textarea.fill('a'.repeat(1000));
+  await textarea.press('End');
+  await textarea.type('a'); // attempt to type the 1001st character
+
+  // The handleCommentChange handler silently rejects any value > 1000,
+  // so the textarea must never exceed 1000 chars
   const value = await textarea.inputValue();
   expect(value.length).toBeLessThanOrEqual(1000);
 
-  // Counter should show the actual length over 1000
+  // Counter should show the actual length
   await expect(page.getByText(`${value.length} / 1000`)).toBeVisible();
 });
 
-// ─── TC-5: Duplicate review on same booking → error toast ────────────────────
+// ─── TC6-5: Duplicate review on same booking → error toast (EC-5) ────────────
 
-test('TC2-5: Second review on the same booking shows duplicate error', async ({ page }) => {
+test('TC6-5: Second review on the same booking shows duplicate error', async ({ page }) => {
   // First review — make sure one exists for this booking before we attempt
   // a duplicate. We submit it via the API to keep the test focused on the
   // duplicate-error UX rather than two consecutive UI submissions.
