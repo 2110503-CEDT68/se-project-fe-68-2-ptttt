@@ -42,21 +42,34 @@ export default function ReviewItem({
   const isOwner = currentUserId && review.user?._id === currentUserId;
 
   const handleDelete = async () => {
-    if (!confirm("Delete this review?")) return;
-    if (!token) return;
+  if (!token) {
+    toast.error("You must be logged in to delete a review.");
+    return;
+  }
 
-    setLoading(true);
-    try {
-      await deleteReview(token, review._id);
-      toast.success("Review deleted");
-      // update page state without full browser reload
-      router.refresh();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to delete review");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const confirmDelete = confirm("Are you sure you want to delete this review?");
+  if (!confirmDelete) return;
+
+  setLoading(true);
+
+  const promise = deleteReview(token, review._id);
+
+  toast.promise(promise, {
+    loading: "Deleting review...",
+    success: "Your review has been deleted successfully.",
+    error: (err: any) =>
+      err?.message || "Something went wrong while deleting the review.",
+  });
+
+  try {
+    await promise;
+    router.refresh();
+  } catch (err) {
+    // error already handled by toast.promise
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="flex gap-4 py-5 border-b border-slate-700/50 last:border-0">
