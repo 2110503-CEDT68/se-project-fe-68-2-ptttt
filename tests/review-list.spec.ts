@@ -254,6 +254,6 @@ test('TC3-8: Owner can delete their own review', async ({ page }) => {
   page.once('dialog', (dialog) => dialog.accept());
   await page.locator('button[title="Delete review"]').first().click();
 
-  await expect(page.getByText(/review deleted/i)).toBeVisible();
+  await expect(page.getByText(/deleted successfully/i)).toBeVisible();
   await expect(page.getByText('Will delete this.')).not.toBeVisible();
 });

@@ -291,7 +291,7 @@ test("TC-S2: Deleting the last review refreshes the page back to the empty state
   page.once("dialog", (dialog) => dialog.accept());
   await page.locator('button[title="Delete review"]').first().click();
 
-  await expect(page.getByText(/review deleted/i)).toBeVisible();
+  await expect(page.getByText(/deleted successfully/i)).toBeVisible();
 
   // router.refresh() should pull the server-rendered empty state back in.
   await expect(page.getByText("Delete me and refresh the page.")).not.toBeVisible();
