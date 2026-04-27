@@ -31,7 +31,7 @@ const USER_PASSWORD = '123456';
 // `getByText('Test Camp <ts>')` doesn't accidentally match this one when all
 // three test files start at the same millisecond.
 const RUN_ID = Date.now();
-const CAMPGROUND_NAME = `RatingFE-${RUN_ID}`;
+const CAMPGROUND_NAME = `Test Rating ${RUN_ID}`;
 
 // ─── Created-resource tracking (for cleanup) ────────────────────────────────
 
@@ -66,9 +66,9 @@ async function apiCreateCampground(api: APIRequestContext, token: string): Promi
     headers: { Authorization: `Bearer ${token}` },
     data: {
       name: CAMPGROUND_NAME,
-      address: '123 Forest Road, Chiang Mai',
-      tel: '0812345678',
-      picture: 'https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg',
+      address: 'Songkhla',
+      tel:     '081-234-5678',
+      picture: 'https://tinyurl.com/5n6zfbdv',
     },
   });
   const json = await res.json();
@@ -296,9 +296,9 @@ test('TC1-5: User without a booking for this campground — form disabled', asyn
         headers: { Authorization: `Bearer ${adminToken}` },
         data: {
           name: `${CAMPGROUND_NAME} no-booking`,
-          address: '456 Lakeside Lane',
-          tel: '0823456789',
-          picture: 'https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg',
+          address: 'Songkhla',
+          tel:     '081-234-5678',
+          picture: 'https://tinyurl.com/5n6zfbdv',
         },
       });
       return (await res.json()).data?._id;
