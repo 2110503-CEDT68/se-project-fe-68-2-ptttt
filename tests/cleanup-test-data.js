@@ -12,7 +12,11 @@ const ADMIN_EMAIL    = process.env.ADMIN_EMAIL    || 'admin@gmail.com';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '123456';
 
 const TEST_PREFIXES = [
+  'Test',
+  'DeleteOnly',
   'Test Camp',
+  'Test Update',
+  'Test Campground',
   'Duplicate Camp',
   'Samila Beach',
   'AvgRating-',
