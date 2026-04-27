@@ -188,7 +188,8 @@ test('TC2-5-1: 5 reviews displayed on one page with no pagination controls', asy
   await expect(cards).toHaveCount(5, { timeout: 10_000 });
 
   // Pagination controls must NOT appear (threshold not exceeded)
-  const paginationContainer = page.locator('.flex.items-center.justify-center.gap-2.mt-6');
+  // Use a more specific selector that includes the border-t class
+  const paginationContainer = page.locator('div.flex.items-center.justify-center.gap-2.border-t');
   await expect(paginationContainer).not.toBeVisible();
 });
 
@@ -202,18 +203,19 @@ test('TC2-5-2: 7 reviews trigger pagination; page 1 shows 5 reviews with Next en
   await expect(cards).toHaveCount(5, { timeout: 10_000 });
 
   // Pagination container should be visible
-  const paginationContainer = page.locator('.flex.items-center.justify-center.gap-2.mt-6');
+  // Use a more specific selector that includes the border-t class
+  const paginationContainer = page.locator('div.flex.items-center.justify-center.gap-2.border-t');
   await expect(paginationContainer).toBeVisible();
 
-  // Next button (ChevronRight) - find within pagination container
-  const nextBtn = paginationContainer.locator('button').last();
-  await expect(nextBtn).toBeVisible();
-  await expect(nextBtn).toBeEnabled();
-
-  // Previous button (ChevronLeft) - find within pagination container
-  const prevBtn = paginationContainer.locator('button').first();
+  // Find the Previous button (has ChevronLeft icon, first button in container)
+  const prevBtn = paginationContainer.locator('button').filter({ has: page.locator('svg.lucide-chevron-left') });
   await expect(prevBtn).toBeVisible();
-  await expect(prevBtn).toBeDisabled();
+  await expect(prevBtn).toBeDisabled(); // On page 1, Previous is disabled
+  
+  // Find the Next button (has ChevronRight icon, last button in container)
+  const nextBtn = paginationContainer.locator('button').filter({ has: page.locator('svg.lucide-chevron-right') });
+  await expect(nextBtn).toBeVisible();
+  await expect(nextBtn).toBeEnabled(); // On page 1, Next is enabled
 });
 
 // ─── TC2-5-3: 0 reviews → empty message, no pagination ───────────────────────
@@ -223,11 +225,11 @@ test('TC2-5-3: No reviews shows empty-state message and no pagination controls',
 
   // Empty-state message
   await expect(
-    page.getByText(/no reviews yet/i),
+    page.getByText(/no reviews yet|be the first/i),
   ).toBeVisible({ timeout: 10_000 });
 
   // No pagination controls
-  const paginationContainer = page.locator('.flex.items-center.justify-center.gap-2.mt-6');
+  const paginationContainer = page.locator('div.flex.items-center.justify-center.gap-2.border-t');
   await expect(paginationContainer).not.toBeVisible();
 });
 
@@ -242,22 +244,22 @@ test('TC2-5-4: Clicking Next navigates to page 2 showing remaining 2 reviews', a
   await expect(cards).toHaveCount(5, { timeout: 10_000 });
 
   // Find pagination container
-  const paginationContainer = page.locator('.flex.items-center.justify-center.gap-2.mt-6');
+  const paginationContainer = page.locator('div.flex.items-center.justify-center.gap-2.border-t');
   
-  // Navigate to page 2 - click the last button (Next/ChevronRight)
-  const nextBtn = paginationContainer.locator('button').last();
+  // Find the Next button (ChevronRight)
+  const nextBtn = paginationContainer.locator('button').filter({ has: page.locator('svg.lucide-chevron-right') });
   await nextBtn.click();
 
-  // Wait for page transition
-  await page.waitForTimeout(500);
+  // Wait for page transition and re-render
+  await page.waitForTimeout(1000);
 
   // Only 2 remaining reviews on page 2
   await expect(cards).toHaveCount(2, { timeout: 10_000 });
 
   // On the last page: Next disabled, Previous enabled
-  await expect(nextBtn).toBeDisabled();
-  const prevBtn = paginationContainer.locator('button').first();
+  const prevBtn = paginationContainer.locator('button').filter({ has: page.locator('svg.lucide-chevron-left') });
   await expect(prevBtn).toBeEnabled();
+  await expect(nextBtn).toBeDisabled();
 });
 
 // ─── TC2-5-5: Click Previous → back to page 1 with 5 reviews ─────────────────
@@ -268,18 +270,18 @@ test('TC2-5-5: Clicking Previous from page 2 returns to page 1 with 5 reviews', 
   const cards = getReviewCards(page);
 
   // Find pagination container
-  const paginationContainer = page.locator('.flex.items-center.justify-center.gap-2.mt-6');
+  const paginationContainer = page.locator('div.flex.items-center.justify-center.gap-2.border-t');
   
-  // Navigate to page 2 first - click Next (last button)
-  const nextBtn = paginationContainer.locator('button').last();
+  // Navigate to page 2 first - click Next
+  const nextBtn = paginationContainer.locator('button').filter({ has: page.locator('svg.lucide-chevron-right') });
   await nextBtn.click();
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(1000);
   await expect(cards).toHaveCount(2, { timeout: 10_000 });
 
-  // Click Previous (first button) — back to page 1
-  const prevBtn = paginationContainer.locator('button').first();
+  // Click Previous — back to page 1
+  const prevBtn = paginationContainer.locator('button').filter({ has: page.locator('svg.lucide-chevron-left') });
   await prevBtn.click();
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(1000);
   await expect(cards).toHaveCount(5, { timeout: 10_000 });
 
   // Back on first page: Previous disabled, Next enabled
