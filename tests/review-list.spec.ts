@@ -16,7 +16,7 @@ import { test, expect, Page, request as playwrightRequest, APIRequestContext } f
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-const BASE_URL    = process.env.FRONTEND_URL || 'http://localhost:3001';
+const BASE_URL    = process.env.FRONTEND_URL || 'http://localhost:3000';
 const BACKEND_URL = process.env.BACKEND_URL  || 'http://localhost:5000';
 
 const ADMIN_EMAIL    = 'admin@gmail.com';
