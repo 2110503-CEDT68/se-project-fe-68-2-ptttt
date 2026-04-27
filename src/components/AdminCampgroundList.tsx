@@ -130,6 +130,7 @@ export default function AdminCampgroundList({
       {filteredCampgrounds.map((item: CampgroundItem) => (
         <div
           key={item._id}
+          data-testid={`campground-card-${item._id}`}
           className="border-b border-slate-700/50 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
         >
           {editingId === item._id ? (
