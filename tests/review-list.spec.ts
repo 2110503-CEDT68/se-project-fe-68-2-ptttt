@@ -213,20 +213,48 @@ test('TC3-4: Sort "Lowest rated" shows lowest-rated review first', async ({ page
   expect(oneIdx).toBeLessThan(fiveIdx);
 });
 
+test('TC3-5: Sort "Most recent" shows most recent review first', async ({ page }) => {
+  const api = await playwrightRequest.newContext();
+  try {
+    const bk  = await apiCreateBooking(api, userToken, campgroundId);
+    createdBookingIds.push(bk);
+    const rid = await apiCreateReview(api, userToken, campgroundId, bk, 3, 'Newest review');
+    createdReviewIds.push(rid);
+  } finally {
+    await api.dispose();
+  }
+
+  await loginUserUI(page);
+  await gotoCampgroundDetail(page, campgroundId);
+
+  await page.getByRole('button', { name: /most recent/i }).click();   // open dropdown
+  await page.getByRole('button', { name: /highest rated/i }).click();  // select highest
+  await page.getByRole('button', { name: /highest rated/i }).click();  // open dropdown again
+  await page.getByRole('button', { name: /most recent/i }).click();    // select most recent
+
+  const newestIdx = await page.getByText('Newest review').evaluate((el) =>
+    [...document.querySelectorAll('p')].indexOf(el as HTMLParagraphElement)
+  );
+  const fiveIdx = await page.getByText('Great campsite!').evaluate((el) =>
+    [...document.querySelectorAll('p')].indexOf(el as HTMLParagraphElement)
+  );
+  expect(newestIdx).toBeLessThan(fiveIdx);
+});
+
 // ─── Review Item ─────────────────────────────────────────────────────────────
 
-test('TC3-5: Delete button is visible to the review owner', async ({ page }) => {
+test('TC3-6: Delete button is visible to the review owner', async ({ page }) => {
   await loginUserUI(page);
   await gotoCampgroundDetail(page, campgroundId);
   await expect(page.locator('button[title="Delete review"]').first()).toBeVisible();
 });
 
-test('TC3-6: Delete button is NOT visible when not logged in', async ({ page }) => {
+test('TC3-7: Delete button is NOT visible when not logged in', async ({ page }) => {
   await gotoCampgroundDetail(page, campgroundId);
   await expect(page.locator('button[title="Delete review"]')).not.toBeVisible();
 });
 
-test('TC3-7: Cancelling the confirm dialog keeps the review', async ({ page }) => {
+test('TC3-8: Cancelling the confirm dialog keeps the review', async ({ page }) => {
   await loginUserUI(page);
   await gotoCampgroundDetail(page, campgroundId);
   await expect(page.getByText('Great campsite!')).toBeVisible();
@@ -237,7 +265,7 @@ test('TC3-7: Cancelling the confirm dialog keeps the review', async ({ page }) =
   await expect(page.getByText('Great campsite!')).toBeVisible();
 });
 
-test('TC3-8: Owner can delete their own review', async ({ page }) => {
+test('TC3-9: Owner can delete their own review', async ({ page }) => {
   const api = await playwrightRequest.newContext();
   try {
     const bk = await apiCreateBooking(api, userToken, campgroundId);
@@ -256,4 +284,49 @@ test('TC3-8: Owner can delete their own review', async ({ page }) => {
 
   await expect(page.getByText(/deleted successfully/i)).toBeVisible();
   await expect(page.getByText('Will delete this.')).not.toBeVisible();
+});
+
+test('TC3-10: Review by a deleted user shows "Anonymous"', async ({ page }) => {
+  // Register a temporary user
+  const tempEmail    = `temp-${Date.now()}@test.com`;
+  const tempPassword = '123456';
+
+  const api = await playwrightRequest.newContext();
+  let tempUserId = '';
+  try {
+    // Register
+    const regRes = await api.post(`${BACKEND_URL}/api/v1/auth/register`, {
+      data: { name: 'Temp User', email: tempEmail, password: tempPassword, tel: '0800000099', role: 'user' },
+    });
+    const regJson = await regRes.json();
+    if (!regJson.success) throw new Error(`Register failed: ${JSON.stringify(regJson)}`);
+
+    // Login to get temp token
+    const tempToken = await apiLogin(tempEmail, tempPassword);
+
+    // Get user id
+    const meRes  = await api.get(`${BACKEND_URL}/api/v1/auth/me`, {
+      headers: { Authorization: `Bearer ${tempToken}` },
+    });
+    const meJson = await meRes.json();
+    tempUserId   = meJson.data._id;
+
+    // Create booking + review as temp user
+    const bk  = await apiCreateBooking(api, tempToken, campgroundId);
+    const rid = await apiCreateReview(api, tempToken, campgroundId, bk, 5, 'Review by temp user');
+    createdReviewIds.push(rid);
+    createdBookingIds.push(bk);
+
+    // Delete the temp user (admin action)
+    await api.delete(`${BACKEND_URL}/api/v1/auth/delete/${tempUserId}`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+  } finally {
+    await api.dispose();
+  }
+
+  // Navigate as logged-in user and verify "Anonymous" is shown
+  await loginUserUI(page);
+  await gotoCampgroundDetail(page, campgroundId);
+  await expect(page.getByText('Anonymous')).toBeVisible();
 });
