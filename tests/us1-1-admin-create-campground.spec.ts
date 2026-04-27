@@ -23,9 +23,9 @@ const createdCampgroundIds: string[] = [];
 
 const VALID_CAMPGROUND = {
   name: `Test Camp ${Date.now()}`, // unique name to avoid duplicate
-  address: '123 Forest Road, Chiang Mai',
-  tel: '0812345678',
-  picture: 'https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg',
+  address: 'Songkhla',
+  tel: '081-234-5678',
+  picture: 'https://tinyurl.com/5n6zfbdv',
 };
 
 /** Login as admin and navigate to admin campgrounds tab */
@@ -147,9 +147,9 @@ test.afterAll(async () => {
   await apiContext.dispose();
 });
 
-// ─── TC-1: Create with valid data (Valid) ─────────────────────────────────────
+// ─── TC1-1: Create with valid data (Valid) ─────────────────────────────────────
 
-test('TC-1: Create campground with valid data', async ({ page }) => {
+test('TC1-1: Create campground with all valid fields', async ({ page }) => {
   // Start capturing the API response BEFORE clicking create
   const idPromise = captureCreatedCampgroundId(page);
 
@@ -171,9 +171,9 @@ test('TC-1: Create campground with valid data', async ({ page }) => {
   await expect(page.getByText(VALID_CAMPGROUND.name)).toBeVisible();
 });
 
-// ─── TC-2: Missing name (Invalid) ────────────────────────────────────────────
+// ─── TC1-2: Empty name field (Invalid) ───────────────────────────────────────
 
-test('TC-2: Missing campground name field', async ({ page }) => {
+test('TC1-2: Create campground with empty name field', async ({ page }) => {
   await openCreateModal(page);
   await fillCreateForm(page, {
     name: '',
@@ -191,9 +191,9 @@ test('TC-2: Missing campground name field', async ({ page }) => {
   await expect(page.getByText('Create New Campground')).toBeVisible();
 });
 
-// ─── TC-3: Missing address (Invalid) ─────────────────────────────────────────
+// ─── TC1-3: Empty address field (Invalid) ────────────────────────────────────
 
-test('TC-3: Missing address field', async ({ page }) => {
+test('TC1-3: Create campground with empty address field', async ({ page }) => {
   await openCreateModal(page);
   await fillCreateForm(page, {
     name: VALID_CAMPGROUND.name,
@@ -208,9 +208,9 @@ test('TC-3: Missing address field', async ({ page }) => {
   await expect(page.getByText('Create New Campground')).toBeVisible();
 });
 
-// ─── TC-4: Missing phone number (Invalid) ────────────────────────────────────
+// ─── TC1-4: Empty phone number field (Invalid) ───────────────────────────────
 
-test('TC-4: Missing phone number field', async ({ page }) => {
+test('TC1-4: Create campground with empty phone number field', async ({ page }) => {
   await openCreateModal(page);
   await fillCreateForm(page, {
     name: VALID_CAMPGROUND.name,
@@ -225,9 +225,9 @@ test('TC-4: Missing phone number field', async ({ page }) => {
   await expect(page.getByText('Create New Campground')).toBeVisible();
 });
 
-// ─── TC-5: Missing picture URL (Invalid) ─────────────────────────────────────
+// ─── TC1-5: Empty picture URL field (Invalid) ────────────────────────────────
 
-test('TC-5: Missing picture URL field', async ({ page }) => {
+test('TC1-5: Create campground with empty picture URL field', async ({ page }) => {
   await openCreateModal(page);
   await fillCreateForm(page, {
     name: VALID_CAMPGROUND.name,
@@ -242,9 +242,9 @@ test('TC-5: Missing picture URL field', async ({ page }) => {
   await expect(page.getByText('Create New Campground')).toBeVisible();
 });
 
-// ─── TC-6: Duplicate campground name (Invalid) ───────────────────────────────
+// ─── TC1-6: Duplicate campground name (Invalid) ──────────────────────────────
 
-test('TC-6: Duplicate campground name', async ({ page }) => {
+test('TC1-6: Create campground with duplicate name', async ({ page }) => {
   const duplicateName = `Duplicate Camp ${Date.now()}`;
 
   // Start capturing before the first create

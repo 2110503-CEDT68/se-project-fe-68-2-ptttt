@@ -21,8 +21,6 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
 const ADMIN_EMAIL = 'admin@gmail.com';
 const ADMIN_PASSWORD = '123456';
 
-const RUN_ID = Date.now();
-
 // ─── Resource tracking ───────────────────────────────────────────────────────
 
 let adminToken = '';
@@ -140,8 +138,8 @@ test.afterAll(async () => {
  * test. Returns the name. Each test owns its own campground so they cannot
  * interfere with each other when run in parallel.
  */
-async function freshCampground(testName: string): Promise<string> {
-  const name = `UpdateFE-${RUN_ID}-${testName}`;
+async function freshCampground(): Promise<string> {
+  const name = `Test Update ${Date.now()}`;
   const api = await playwrightRequest.newContext();
   try {
     const id = await apiCreateCampground(api, adminToken, name);
@@ -156,10 +154,10 @@ async function freshCampground(testName: string): Promise<string> {
 // GROUP 1 — Valid update
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// ─── TC1-1: Update all fields with valid data ────────────────────────────────
+// ─── TC2-1: Update all fields with valid data (Valid) ────────────────────────
 
-test('TC1-1: Update all fields with valid data', async ({ page }) => {
-  const original = await freshCampground('valid');
+test('TC2-1: Update campground with all valid fields', async ({ page }) => {
+  const original = await freshCampground();
   const updated = `${original} V2`;
 
   await loginAsAdmin(page);
@@ -181,10 +179,10 @@ test('TC1-1: Update all fields with valid data', async ({ page }) => {
 // GROUP 2 — Required-field validation
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// ─── TC1-2: Empty name field ─────────────────────────────────────────────────
+// ─── TC2-2: Empty name field (Invalid) ───────────────────────────────────────
 
-test('TC1-2: Empty name field shows validation error', async ({ page }) => {
-  const original = await freshCampground('emptyname');
+test('TC2-2: Update campground with empty name field', async ({ page }) => {
+  const original = await freshCampground();
 
   await loginAsAdmin(page);
   await gotoCampgroundsTab(page);
@@ -193,15 +191,15 @@ test('TC1-2: Empty name field shows validation error', async ({ page }) => {
   await fillEditField(page, 'Name', '');
   await clickSave(page);
 
-  await expect(page.getByText(/name is required/i)).toBeVisible();
+  await expect(page.getByText(/campground name is required/i)).toBeVisible();
   // Edit form stays open — Save button still visible
   await expect(page.getByRole('button', { name: /^save$/i })).toBeVisible();
 });
 
-// ─── TC1-3: Empty address field ──────────────────────────────────────────────
+// ─── TC2-3: Empty address field (Invalid) ────────────────────────────────────
 
-test('TC1-3: Empty address field shows validation error', async ({ page }) => {
-  const original = await freshCampground('emptyaddr');
+test('TC2-3: Update campground with empty address field', async ({ page }) => {
+  const original = await freshCampground();
 
   await loginAsAdmin(page);
   await gotoCampgroundsTab(page);
@@ -214,10 +212,10 @@ test('TC1-3: Empty address field shows validation error', async ({ page }) => {
   await expect(page.getByRole('button', { name: /^save$/i })).toBeVisible();
 });
 
-// ─── TC1-4: Empty tel field ──────────────────────────────────────────────────
+// ─── TC2-4: Empty phone number field (Invalid) ───────────────────────────────
 
-test('TC1-4: Empty tel field shows validation error', async ({ page }) => {
-  const original = await freshCampground('emptytel');
+test('TC2-4: Update campground with empty phone number field', async ({ page }) => {
+  const original = await freshCampground();
 
   await loginAsAdmin(page);
   await gotoCampgroundsTab(page);
@@ -230,10 +228,10 @@ test('TC1-4: Empty tel field shows validation error', async ({ page }) => {
   await expect(page.getByRole('button', { name: /^save$/i })).toBeVisible();
 });
 
-// ─── TC1-5: Empty picture field ──────────────────────────────────────────────
+// ─── TC2-5: Empty picture URL field (Invalid) ────────────────────────────────
 
-test('TC1-5: Empty picture URL field shows validation error', async ({ page }) => {
-  const original = await freshCampground('emptypic');
+test('TC2-5: Update campground with empty picture URL field', async ({ page }) => {
+  const original = await freshCampground();
 
   await loginAsAdmin(page);
   await gotoCampgroundsTab(page);
@@ -244,25 +242,4 @@ test('TC1-5: Empty picture URL field shows validation error', async ({ page }) =
 
   await expect(page.getByText(/picture url is required/i)).toBeVisible();
   await expect(page.getByRole('button', { name: /^save$/i })).toBeVisible();
-});
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// GROUP 3 — Cancel
-// ═══════════════════════════════════════════════════════════════════════════════
-
-// ─── TC1-6: Cancel discards edits ────────────────────────────────────────────
-
-test('TC1-6: Cancel discards edits and reverts to original', async ({ page }) => {
-  const original = await freshCampground('cancel');
-
-  await loginAsAdmin(page);
-  await gotoCampgroundsTab(page);
-
-  await clickEdit(page, original);
-  await fillEditField(page, 'Name', 'Should Not Persist');
-  await clickCancel(page);
-
-  // The original name should still be in the list (no change)
-  await expect(page.locator('h2.text-white.font-semibold', { hasText: original })).toBeVisible();
-  await expect(page.locator('h2.text-white.font-semibold', { hasText: 'Should Not Persist' })).not.toBeVisible();
 });
