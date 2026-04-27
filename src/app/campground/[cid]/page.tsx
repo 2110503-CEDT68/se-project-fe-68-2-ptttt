@@ -50,22 +50,22 @@ export default async function CampgroundDetailPage({
   if (session?.user?.token) {
     try {
       const profile = await getUserProfile(session.user.token);
-      const isUser = profile.data.role === "user";
-      if (isUser) {
-        const res = await getMyBookings(session.user.token);
-        const today = new Date().toISOString().split("T")[0];
-        const activeBookings = res.data.filter(
-          (b: any) =>
-            new Date(b.bookingDate).toISOString().split("T")[0] >= today,
-        );
-        alreadyBooked = activeBookings.some(
-          (b: any) => b.campground._id === campground._id,
-        );
-        maxBookingReached = activeBookings.length >= 3;
-        bookingIdsForCampground = res.data
-          .filter((b: any) => b.campground?._id === campground._id)
-          .map((b: any) => b._id);
-      }
+      const res = await getMyBookings(session.user.token);
+      const today = new Date().toISOString().split("T")[0];
+      const activeBookings = res.data.filter(
+        (b: any) =>
+          new Date(b.bookingDate).toISOString().split("T")[0] >= today,
+      );
+      alreadyBooked = activeBookings.some(
+        (b: any) => b.campground._id === campground._id,
+      );
+      maxBookingReached = activeBookings.length >= 3;
+      // Filter only bookings that belong to the current user (important for admin
+      // whose getMyBookings returns all bookings in the system)
+      const currentUserId = profile.data._id;
+      bookingIdsForCampground = res.data
+        .filter((b: any) => b.campground?._id === campground._id && b.user?._id === currentUserId)
+        .map((b: any) => b._id);
     } catch {}
   }
 
