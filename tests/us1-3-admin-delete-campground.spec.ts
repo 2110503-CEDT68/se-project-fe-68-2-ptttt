@@ -109,9 +109,9 @@ test.afterEach(async () => {
   await deleteCampgroundById(campgroundId);
 });
 
-// ─── TC-1: Correct name typed (Class 1 — Valid) ───────────────────────────────
+// ─── TC3-1: Correct name typed (Class 1 — Valid) ─────────────────────────────
 
-test('TC-1: Correct name typed → deletion succeeds', async ({ page }) => {
+test('TC3-1: Correct name typed → deletion succeeds', async ({ page }) => {
   await openDeleteModal(page);
 
   await page.getByPlaceholder('Type campground name to confirm').fill(CAMPGROUND_NAME);
@@ -131,9 +131,9 @@ test('TC-1: Correct name typed → deletion succeeds', async ({ page }) => {
   await expect(page.getByRole('heading', { name: CAMPGROUND_NAME, exact: true })).not.toBeVisible();
 });
 
-// ─── TC-2: Wrong name typed (Class 2 — Invalid) ───────────────────────────────
+// ─── TC3-2: Wrong name typed (Class 2 — Invalid) ─────────────────────────────
 
-test('TC-2: Wrong name typed → Delete button stays disabled', async ({ page }) => {
+test('TC3-2: Wrong name typed → Delete button stays disabled', async ({ page }) => {
   await openDeleteModal(page);
 
   // Type a completely different name
@@ -143,9 +143,9 @@ test('TC-2: Wrong name typed → Delete button stays disabled', async ({ page })
   await expect(deleteBtn).toBeDisabled();
 });
 
-// ─── TC-3: Empty input (Class 3 — Invalid) ────────────────────────────────────
+// ─── TC3-3: Empty input (Class 3 — Invalid) ──────────────────────────────────
 
-test('TC-3: Empty input → Delete button stays disabled', async ({ page }) => {
+test('TC3-3: Empty input → Delete button stays disabled', async ({ page }) => {
   await openDeleteModal(page);
 
   // Input is empty by default — button must be disabled immediately
@@ -153,9 +153,9 @@ test('TC-3: Empty input → Delete button stays disabled', async ({ page }) => {
   await expect(deleteBtn).toBeDisabled();
 });
 
-// ─── TC-4: Partial name typed (Class 4 — Invalid) ────────────────────────────
+// ─── TC3-4: Partial name typed (Class 4 — Invalid) ───────────────────────────
 
-test('TC-4: Partial name "Samila" typed → Delete button stays disabled', async ({ page }) => {
+test('TC3-4: Partial name "Samila" typed → Delete button stays disabled', async ({ page }) => {
   await openDeleteModal(page);
 
   // "Samila" is a prefix of "Samila Beach" but not the full name

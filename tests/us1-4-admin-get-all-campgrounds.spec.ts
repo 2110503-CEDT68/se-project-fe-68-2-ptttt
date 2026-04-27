@@ -113,9 +113,43 @@ test('TC4-1: Campground list is displayed with name, address, and phone number',
   await expect(page.getByText(/081-234-5678/).first()).toBeVisible();
 });
 
-// ─── TC4-2: No campgrounds exist → empty state message (EC-2) ────────────────
+// ─── TC4-2: Search term matches some campgrounds → filtered list (EC-3) ───────
 
-test('TC4-2: No campgrounds exist — "No campgrounds found." message is displayed', async ({ page }) => {
+test('TC4-2: Search term matches some campgrounds — only matching campgrounds are displayed', async ({ page }) => {
+  // Input: Navigate to /campground (campground exists), type matching search term
+  await page.goto(`${BASE_URL}/campground`);
+  await page.waitForLoadState('networkidle');
+
+  await expect(page.getByText(state.campgroundName)).toBeVisible({ timeout: 10_000 });
+
+  const searchBox = page.getByPlaceholder(/search campgrounds by name/i);
+  await searchBox.fill(state.campgroundName);
+
+  // Expected Output: Only matching campgrounds are displayed, others are hidden
+  await expect(page.getByText(state.campgroundName)).toBeVisible();
+  await expect(page.getByText('Showing 1 of')).toBeVisible();
+});
+
+// ─── TC4-3: Search term matches no campgrounds → empty state (EC-4) ──────────
+
+test('TC4-3: Search term matches no campgrounds — "No campgrounds found." is displayed', async ({ page }) => {
+  // Input: Navigate to /campground (campground exists), type non-matching search term
+  await page.goto(`${BASE_URL}/campground`);
+  await page.waitForLoadState('networkidle');
+
+  await expect(page.getByText(state.campgroundName)).toBeVisible({ timeout: 10_000 });
+
+  const searchBox = page.getByPlaceholder(/search campgrounds by name/i);
+  await searchBox.fill('NonExistentCampground_XYZ_99999');
+
+  // Expected Output: "No campgrounds found." message is displayed, count shows "Showing 0 of X"
+  await expect(page.getByText('No campgrounds found.')).toBeVisible();
+  await expect(page.getByText(/Showing 0 of/)).toBeVisible();
+});
+
+// ─── TC4-4: No campgrounds exist → empty state message (EC-2) ────────────────
+
+test('TC4-4: No campgrounds exist — "No campgrounds found." message is displayed', async ({ page }) => {
   // Input: Navigate to /campground (no campground exists — mocked via search filter)
   // Since /campground is a Next.js Server Component, page.route() cannot intercept
   // server-side fetches. Instead we navigate to the page normally and use the
@@ -133,39 +167,5 @@ test('TC4-2: No campgrounds exist — "No campgrounds found." message is display
 
   // Expected Output: "No campgrounds found." message is displayed and no campground cards are rendered
   await expect(page.getByText('No campgrounds found.')).toBeVisible({ timeout: 10_000 });
-  await expect(page.getByText(/Showing 0 of/)).toBeVisible();
-});
-
-// ─── TC4-3: Search term matches some campgrounds → filtered list (EC-3) ───────
-
-test('TC4-3: Search term matches some campgrounds — only matching campgrounds are displayed', async ({ page }) => {
-  // Input: Navigate to /campground (campground exists), type matching search term
-  await page.goto(`${BASE_URL}/campground`);
-  await page.waitForLoadState('networkidle');
-
-  await expect(page.getByText(state.campgroundName)).toBeVisible({ timeout: 10_000 });
-
-  const searchBox = page.getByPlaceholder(/search campgrounds by name/i);
-  await searchBox.fill(state.campgroundName);
-
-  // Expected Output: Only matching campgrounds are displayed, others are hidden
-  await expect(page.getByText(state.campgroundName)).toBeVisible();
-  await expect(page.getByText('Showing 1 of')).toBeVisible();
-});
-
-// ─── TC4-4: Search term matches no campgrounds → empty state (EC-4) ──────────
-
-test('TC4-4: Search term matches no campgrounds — "No campgrounds found." is displayed', async ({ page }) => {
-  // Input: Navigate to /campground (campground exists), type non-matching search term
-  await page.goto(`${BASE_URL}/campground`);
-  await page.waitForLoadState('networkidle');
-
-  await expect(page.getByText(state.campgroundName)).toBeVisible({ timeout: 10_000 });
-
-  const searchBox = page.getByPlaceholder(/search campgrounds by name/i);
-  await searchBox.fill('NonExistentCampground_XYZ_99999');
-
-  // Expected Output: "No campgrounds found." message is displayed, count shows "Showing 0 of X"
-  await expect(page.getByText('No campgrounds found.')).toBeVisible();
   await expect(page.getByText(/Showing 0 of/)).toBeVisible();
 });
