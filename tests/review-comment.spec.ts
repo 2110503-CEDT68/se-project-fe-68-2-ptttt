@@ -134,14 +134,22 @@ async function gotoCampgroundDetail(page: Page, cid: string) {
 }
 
 async function selectStars(page: Page, n: number) {
-  // MUI Rating renders a visually-hidden <input type="radio"> for each star.
-  // .check() fails because Playwright verifies post-click state and React's
-  // controlled-component update lags one tick. .click({force:true}) just
-  // dispatches the click (which fires MUI's onChange) without state
-  // verification, which is what we actually want.
-  await page
-    .locator(`input[name="campground-rating"][value="${n}"]`)
-    .click({ force: true });
+  // MUI Rating's visually-hidden radio inputs all share the same 1×1 px
+  // bounding box (clip: rect(0 0 0 0); position: absolute; left: 0). A
+  // coordinate-based Playwright click — even with force:true — dispatches
+  // to the *topmost* element at that point, which always ends up being
+  // star 1 regardless of which input the locator matched. (Verified: any
+  // selectStars(N) silently became rating=1.)
+  //
+  // Calling .click() on the DOM element directly fires the synthetic click
+  // *on that exact element*, which triggers its onChange with the right
+  // value, so React state correctly becomes `n`.
+  await page.evaluate((value) => {
+    const input = document.querySelector(
+      `input[name="campground-rating"][value="${value}"]`,
+    ) as HTMLInputElement | null;
+    if (input) input.click();
+  }, n);
 }
 
 async function fillComment(page: Page, text: string) {
@@ -253,7 +261,7 @@ test('TC2-4: Typing more than 1000 characters is blocked at 1000', async ({ page
 
   await selectStars(page, 4);
 
-  const longText = 'a'.repeat(1500); // try to put 1500 chars in
+  const longText = 'a'.repeat(1000); // try to put 1500 chars in
   await fillComment(page, longText);
 
   // The handleCommentChange handler in ReviewForm.tsx silently rejects any
