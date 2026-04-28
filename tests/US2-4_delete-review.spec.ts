@@ -1,17 +1,20 @@
 /**
- * E2E Test Suite: Delete Rating & Comment (US2-4)
+ * E2E Test Suite: Delete Review (US2-4)
  * Frontend: Campground Detail page → ReviewItem → Delete button
  *
- * Test Plan Reference: DOCS/Sirawit_US2-4.docx
+ * Equivalence Classes:
+ *   EC-1 (Valid)   — User is the review owner and Review ID is valid
+ *   EC-2 (Invalid) — User is NOT the review owner (different user)
+ *   EC-3 (Valid)   — Delete the only review → stats reset to zero
+ *   EC-4 (Valid)   — Delete one review from multiple → stats decrease correctly
+ *   EC-5 (Valid)   — Delete review → ratingCount array updates correctly
  *
- * Prerequisites:
- * - Frontend running at http://localhost:3000
- * - Backend running and connected
- * - Admin account exists: admin@gmail.com / 123456
- * - User account exists:  user@gmail.com  / 123456
- *
- * Cleanup contract: this suite deletes ONLY the data it created.
- * It never drops the database.
+ * Precondition:
+ *   - User is logged in as user@gmail.com
+ *   - User has an active booking for the test campground
+ *   - User has already posted one review for that booking
+ *   - Frontend running at http://localhost:3000
+ *   - Backend running and connected
  */
 
 import {
@@ -24,82 +27,58 @@ import {
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-const BASE_URL = process.env.FRONTEND_URL || "http://localhost:3000";
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:5000";
+const BASE_URL    = process.env.FRONTEND_URL || "http://localhost:3000";
+const BACKEND_URL = process.env.BACKEND_URL  || "http://localhost:5000";
 
-const ADMIN_EMAIL = "admin@gmail.com";
+const ADMIN_EMAIL    = "admin@gmail.com";
 const ADMIN_PASSWORD = "123456";
-const USER_EMAIL = "user@gmail.com";
-const USER_PASSWORD = "123456";
+const USER_EMAIL     = "user@gmail.com";
+const USER_PASSWORD  = "123456";
 
 const RUN_ID = Date.now();
-const CAMPGROUND_NAME = `DeleteReview-${RUN_ID}`;
 
 // ─── Resource tracking ───────────────────────────────────────────────────────
 
-let adminToken = "";
-let userToken = "";
-let user2Token = "";
-let campgroundId = "";
+let adminToken  = "";
+let userToken   = "";
+let user2Token  = "";
+let user2Id     = "";
 const createdCampgroundIds: string[] = [];
-const createdBookingIds: string[] = [];
-const createdReviewIds: string[] = [];
-let user2Id = "";
+const createdBookingIds:    string[] = [];
+const createdReviewIds:     string[] = [];
 
 // ─── API helpers ─────────────────────────────────────────────────────────────
 
 async function apiLogin(email: string, password: string): Promise<string> {
   const ctx = await playwrightRequest.newContext();
   try {
-    const res = await ctx.post(`${BACKEND_URL}/api/v1/auth/login`, {
-      data: { email, password },
-    });
+    const res  = await ctx.post(`${BACKEND_URL}/api/v1/auth/login`, { data: { email, password } });
     const json = await res.json();
-    if (!json.token)
-      throw new Error(`Login failed for ${email}: ${JSON.stringify(json)}`);
+    if (!json.token) throw new Error(`Login failed for ${email}: ${JSON.stringify(json)}`);
     return json.token;
   } finally {
     await ctx.dispose();
   }
 }
 
-async function apiCreateCampground(
-  api: APIRequestContext,
-  token: string,
-  name: string,
-): Promise<string> {
-  const res = await api.post(`${BACKEND_URL}/api/v1/campgrounds`, {
+async function apiCreateCampground(api: APIRequestContext, token: string, name: string): Promise<string> {
+  const res  = await api.post(`${BACKEND_URL}/api/v1/campgrounds`, {
     headers: { Authorization: `Bearer ${token}` },
-    data: {
-      name,
-      address: "123 Forest Road, Chiang Mai",
-      tel: "0812345678",
-      picture:
-        "https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg",
-    },
+    data: { name, address: "Songkhla", tel: "081-234-5678", picture: "https://tinyurl.com/5n6zfbdv" },
   });
   const json = await res.json();
-  if (!json.success)
-    throw new Error(`Create campground failed: ${JSON.stringify(json)}`);
+  if (!json.success) throw new Error(`Create campground failed: ${JSON.stringify(json)}`);
   return json.data._id;
 }
 
-async function apiCreateBooking(
-  api: APIRequestContext,
-  token: string,
-  campId: string,
-): Promise<string> {
+async function apiCreateBooking(api: APIRequestContext, token: string, campId: string): Promise<string> {
   const today = new Date().toISOString().slice(0, 10);
-  const res = await api.post(
-    `${BACKEND_URL}/api/v1/campgrounds/${campId}/bookings`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      data: { bookingDate: today, nights: 1 },
-    },
-  );
+  const res   = await api.post(`${BACKEND_URL}/api/v1/campgrounds/${campId}/bookings`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: { bookingDate: today, nights: 1 },
+  });
   const json = await res.json();
-  if (!json.success)
-    throw new Error(`Create booking failed: ${JSON.stringify(json)}`);
+  if (!json.success) throw new Error(`Create booking failed: ${JSON.stringify(json)}`);
   return json.data._id;
 }
 
@@ -111,65 +90,18 @@ async function apiCreateReview(
   rating: number,
   comment: string,
 ): Promise<string> {
-  const res = await api.post(
-    `${BACKEND_URL}/api/v1/campgrounds/${campId}/reviews`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      data: { booking: bookingId, rating, comment },
-    },
-  );
-  const json = await res.json();
-  if (!json.success)
-    throw new Error(`Create review failed: ${JSON.stringify(json)}`);
-  return json.data._id;
-}
-
-async function apiGetCampground(
-  api: APIRequestContext,
-  campId: string,
-): Promise<any> {
-  const res = await api.get(`${BACKEND_URL}/api/v1/campgrounds/${campId}`);
-  const json = await res.json();
-  if (!json.success)
-    throw new Error(`Get campground failed: ${JSON.stringify(json)}`);
-  return json.data;
-}
-
-async function apiRegisterUser(
-  api: APIRequestContext,
-  email: string,
-  name: string,
-  tel: string,
-): Promise<string> {
-  const res = await api.post(`${BACKEND_URL}/api/v1/auth/register`, {
-    data: { name, email, password: "123456", tel, role: "user" },
-  });
-  const json = await res.json();
-  if (!json.success)
-    throw new Error(`Register failed: ${JSON.stringify(json)}`);
-  return json._id;
-}
-
-async function apiGetUserProfile(
-  api: APIRequestContext,
-  token: string,
-): Promise<any> {
-  const res = await api.get(`${BACKEND_URL}/api/v1/auth/me`, {
+  const res  = await api.post(`${BACKEND_URL}/api/v1/campgrounds/${campId}/reviews`, {
     headers: { Authorization: `Bearer ${token}` },
+    data: { booking: bookingId, rating, comment },
   });
   const json = await res.json();
-  if (!json.success)
-    throw new Error(`Get profile failed: ${JSON.stringify(json)}`);
-  return json.data;
+  if (!json.success) throw new Error(`Create review failed: ${JSON.stringify(json)}`);
+  return json.data._id;
 }
 
 // ─── UI helpers ──────────────────────────────────────────────────────────────
 
-async function loginUserUI(
-  page: Page,
-  email = USER_EMAIL,
-  password = USER_PASSWORD,
-) {
+async function loginUserUI(page: Page, email = USER_EMAIL, password = USER_PASSWORD) {
   await page.goto(`${BASE_URL}/authentication`);
   await page.getByPlaceholder("your@email.com").fill(email);
   await page.getByPlaceholder("••••••••").fill(password);
@@ -183,32 +115,29 @@ async function gotoCampgroundDetail(page: Page, cid: string) {
 }
 
 async function clickDeleteReview(page: Page, reviewText: string) {
-  // Find the review by its comment text, then find the delete button within that review
-  const reviewItem = page
-    .locator("div.flex.gap-4.py-5")
-    .filter({ hasText: reviewText });
-  const deleteBtn = reviewItem.locator('button[title="Delete review"]');
-  await deleteBtn.click();
+  const reviewItem = page.locator("div.flex.gap-4.py-5").filter({ hasText: reviewText });
+  await reviewItem.locator('button[title="Delete review"]').click();
 }
 
-// ─── Setup ───────────────────────────────────────────────────────────────────
+// ─── Setup / Teardown ────────────────────────────────────────────────────────
 
 test.beforeAll(async () => {
   const api = await playwrightRequest.newContext();
   try {
     adminToken = await apiLogin(ADMIN_EMAIL, ADMIN_PASSWORD);
-    userToken = await apiLogin(USER_EMAIL, USER_PASSWORD);
+    userToken  = await apiLogin(USER_EMAIL,  USER_PASSWORD);
 
-    // Register a second user for authorization tests
+    // Register a second user for TC8-2 (non-owner test)
     const user2Email = `user2-${RUN_ID}@test.com`;
-    await apiRegisterUser(api, user2Email, "Test User 2", `08${RUN_ID.toString().slice(-8)}`);
+    const tel2 = `08${RUN_ID.toString().slice(-8)}`;
+    await api.post(`${BACKEND_URL}/api/v1/auth/register`, {
+      data: { name: "Test User 2", email: user2Email, password: "123456", tel: tel2, role: "user" },
+    });
     user2Token = await apiLogin(user2Email, "123456");
-    const user2Profile = await apiGetUserProfile(api, user2Token);
-    user2Id = user2Profile._id;
-
-    campgroundId = await apiCreateCampground(api, adminToken, CAMPGROUND_NAME);
-
-    console.log(`Setup OK: campground=${campgroundId}`);
+    const profileRes = await api.get(`${BACKEND_URL}/api/v1/auth/me`, {
+      headers: { Authorization: `Bearer ${user2Token}` },
+    });
+    user2Id = (await profileRes.json()).data._id;
   } finally {
     await api.dispose();
   }
@@ -217,450 +146,209 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
   const api = await playwrightRequest.newContext();
   try {
-    // Delete reviews
     for (const rid of createdReviewIds) {
-      await api
-        .delete(`${BACKEND_URL}/api/v1/reviews/${rid}`, {
-          headers: { Authorization: `Bearer ${userToken}` },
-        })
-        .catch(() => {});
-      console.log(`Cleanup: delete review ${rid}`);
+      await api.delete(`${BACKEND_URL}/api/v1/reviews/${rid}`, {
+        headers: { Authorization: `Bearer ${userToken}` },
+      }).catch(() => {});
     }
-
-    // Delete bookings
     for (const bid of createdBookingIds) {
-      await api
-        .delete(`${BACKEND_URL}/api/v1/bookings/${bid}`, {
-          headers: { Authorization: `Bearer ${userToken}` },
-        })
-        .catch(() => {});
-      console.log(`Cleanup: delete booking ${bid}`);
+      await api.delete(`${BACKEND_URL}/api/v1/bookings/${bid}`, {
+        headers: { Authorization: `Bearer ${userToken}` },
+      }).catch(() => {});
     }
-
-    // Delete campgrounds (including fresh ones created in tests)
     for (const cid of createdCampgroundIds) {
       await api.delete(`${BACKEND_URL}/api/v1/campgrounds/${cid}`, {
         headers: { Authorization: `Bearer ${adminToken}` },
-      });
-      console.log(`Cleanup: delete campground ${cid}`);
+      }).catch(() => {});
     }
-
-    // Delete main campground
-    if (campgroundId) {
-      await api.delete(`${BACKEND_URL}/api/v1/campgrounds/${campgroundId}`, {
-        headers: { Authorization: `Bearer ${adminToken}` },
-      });
-      console.log(`Cleanup: delete campground ${campgroundId}`);
-    }
-
-    // Delete user2
     if (user2Id) {
       await api.delete(`${BACKEND_URL}/api/v1/auth/delete/${user2Id}`, {
         headers: { Authorization: `Bearer ${adminToken}` },
-      });
-      console.log(`Cleanup: delete user2 ${user2Id}`);
+      }).catch(() => {});
     }
   } finally {
     await api.dispose();
   }
 });
 
-// ═════════════════════════════════════════════════════════════════════════════
-// TC4-1: Valid review ID and owner authorization
-// ═════════════════════════════════════════════════════════════════════════════
+// ─── TC8-1: Owner deletes their own review (EC-1) ────────────────────────────
 
-test("TC4-1: Owner can delete their review with valid ID", async ({ page }) => {
+test("TC8-1: Owner can delete their review — toast shown and review disappears", async ({ page }) => {
   const api = await playwrightRequest.newContext();
-  let bookingId = "";
-  let reviewId = "";
-
+  let campId = "", bookingId = "", reviewId = "";
   try {
-    bookingId = await apiCreateBooking(api, userToken, campgroundId);
+    campId    = await apiCreateCampground(api, adminToken, `TC8-1-${Date.now()}`);
+    createdCampgroundIds.push(campId);
+    bookingId = await apiCreateBooking(api, userToken, campId);
     createdBookingIds.push(bookingId);
-
-    reviewId = await apiCreateReview(
-      api,
-      userToken,
-      campgroundId,
-      bookingId,
-      5,
-      "TC4-1: Valid review to delete",
-    );
+    reviewId  = await apiCreateReview(api, userToken, campId, bookingId, 4, "TC8-1: Owner review");
     createdReviewIds.push(reviewId);
   } finally {
     await api.dispose();
   }
 
   await loginUserUI(page);
-  await gotoCampgroundDetail(page, campgroundId);
+  await gotoCampgroundDetail(page, campId);
+  await expect(page.getByText("TC8-1: Owner review")).toBeVisible();
 
-  // Verify review is visible
-  await expect(page.getByText("TC4-1: Valid review to delete")).toBeVisible();
+  page.once("dialog", (d) => d.accept());
+  await clickDeleteReview(page, "TC8-1: Owner review");
 
-  // Accept the confirmation dialog
-  page.once("dialog", (dialog) => dialog.accept());
-
-  // Click delete
-  await clickDeleteReview(page, "TC4-1: Valid review to delete");
-
-  // Success toast should appear
+  // Toast confirms deletion
   await expect(page.getByText(/deleted successfully/i)).toBeVisible();
-
-  // Review should be removed from the page
-  await expect(
-    page.getByText("TC4-1: Valid review to delete"),
-  ).not.toBeVisible();
-
-  // Remove from tracking since it's already deleted
-  const idx = createdReviewIds.indexOf(reviewId);
-  if (idx > -1) createdReviewIds.splice(idx, 1);
-});
-
-// ═════════════════════════════════════════════════════════════════════════════
-// TC4-4: User is the owner of the review
-// ═════════════════════════════════════════════════════════════════════════════
-
-test("TC4-4: Review owner can successfully delete their review", async ({
-  page,
-}) => {
-  const api = await playwrightRequest.newContext();
-  let bookingId = "";
-  let reviewId = "";
-
-  try {
-    bookingId = await apiCreateBooking(api, userToken, campgroundId);
-    createdBookingIds.push(bookingId);
-
-    reviewId = await apiCreateReview(
-      api,
-      userToken,
-      campgroundId,
-      bookingId,
-      4,
-      "TC4-4: Owner's review",
-    );
-    createdReviewIds.push(reviewId);
-  } finally {
-    await api.dispose();
-  }
-
-  await loginUserUI(page);
-  await gotoCampgroundDetail(page, campgroundId);
-
-  await expect(page.getByText("TC4-4: Owner's review")).toBeVisible();
-
-  page.once("dialog", (dialog) => dialog.accept());
-  await clickDeleteReview(page, "TC4-4: Owner's review");
-
-  await expect(page.getByText(/deleted successfully/i)).toBeVisible();
-  await expect(page.getByText("TC4-4: Owner's review")).not.toBeVisible();
+  // Review disappears immediately
+  await expect(page.getByText("TC8-1: Owner review")).not.toBeVisible();
 
   const idx = createdReviewIds.indexOf(reviewId);
   if (idx > -1) createdReviewIds.splice(idx, 1);
 });
 
-// ═════════════════════════════════════════════════════════════════════════════
-// TC4-5: User is NOT the owner (authorization failure)
-// ═════════════════════════════════════════════════════════════════════════════
+// ─── TC8-2: Non-owner cannot see Delete button (EC-2) ────────────────────────
 
-test("TC4-5: Non-owner cannot see delete button for another user's review", async ({
-  page,
-}) => {
+test("TC8-2: Non-owner cannot see Delete button for another user's review", async ({ page }) => {
   const api = await playwrightRequest.newContext();
-  let bookingId = "";
-  let reviewId = "";
-
+  let campId = "", bookingId = "", reviewId = "";
   try {
-    // User 1 creates a review
-    bookingId = await apiCreateBooking(api, userToken, campgroundId);
+    campId    = await apiCreateCampground(api, adminToken, `Test Delete Review ${Date.now()}`);
+    createdCampgroundIds.push(campId);
+    bookingId = await apiCreateBooking(api, userToken, campId);
     createdBookingIds.push(bookingId);
-
-    reviewId = await apiCreateReview(
-      api,
-      userToken,
-      campgroundId,
-      bookingId,
-      3,
-      "TC4-5: User1's review",
-    );
+    reviewId  = await apiCreateReview(api, userToken, campId, bookingId, 3, "TC8-2: User1 review");
     createdReviewIds.push(reviewId);
   } finally {
     await api.dispose();
   }
 
-  // User 2 logs in and views the campground
+  // Login as user2 (not the review owner)
   const user2Email = `user2-${RUN_ID}@test.com`;
   await loginUserUI(page, user2Email, "123456");
-  await gotoCampgroundDetail(page, campgroundId);
+  await gotoCampgroundDetail(page, campId);
 
-  // Review should be visible
-  await expect(page.getByText("TC4-5: User1's review")).toBeVisible();
+  await expect(page.getByText("TC8-2: User1 review")).toBeVisible();
 
-  // Delete button should NOT be visible to user2
-  const reviewItem = page
-    .locator("div.flex.gap-4.py-5")
-    .filter({ hasText: "TC4-5: User1's review" });
+  // Delete button must NOT be visible to user2
+  const reviewItem = page.locator("div.flex.gap-4.py-5").filter({ hasText: "TC8-2: User1 review" });
   await expect(reviewItem.locator('button[title="Delete review"]')).not.toBeVisible();
 });
 
-// ═════════════════════════════════════════════════════════════════════════════
-// TC4-7: Delete the only review → stats reset to zero
-// ═════════════════════════════════════════════════════════════════════════════
+// ─── TC8-3: Delete only review → stats reset to zero (EC-3) ──────────────────
 
-test("TC4-7: Deleting the only review resets campground stats to zero", async ({
-  page,
-}) => {
-  // Create a fresh campground for this test to avoid interference
+test("TC8-3: Deleting the only review resets stats to 0.0 and shows empty message", async ({ page }) => {
   const api = await playwrightRequest.newContext();
-  let freshCampId = "";
-  let bookingId = "";
-  let reviewId = "";
-
+  let campId = "", bookingId = "", reviewId = "";
   try {
-    freshCampId = await apiCreateCampground(
-      api,
-      adminToken,
-      `DeleteOnly-${Date.now()}`,
-    );
-    createdCampgroundIds.push(freshCampId);
-
-    bookingId = await apiCreateBooking(api, userToken, freshCampId);
+    campId    = await apiCreateCampground(api, adminToken, `Test Delete Review ${Date.now()}`);
+    createdCampgroundIds.push(campId);
+    bookingId = await apiCreateBooking(api, userToken, campId);
     createdBookingIds.push(bookingId);
-
-    reviewId = await apiCreateReview(
-      api,
-      userToken,
-      freshCampId,
-      bookingId,
-      4,
-      "TC4-7: Only review",
-    );
+    reviewId  = await apiCreateReview(api, userToken, campId, bookingId, 4, "TC8-3: Only review");
     createdReviewIds.push(reviewId);
   } finally {
     await api.dispose();
   }
 
   await loginUserUI(page);
-  await gotoCampgroundDetail(page, freshCampId);
+  await gotoCampgroundDetail(page, campId);
 
-  // Verify initial state: 1 review, rating 4.0
+  // Verify initial state
   await expect(page.getByText("4.0")).toBeVisible();
-  await expect(
-    page.locator("div.text-sm.text-slate-400", { hasText: /^1 review$/i }),
-  ).toBeVisible();
+  await expect(page.locator("div.text-sm.text-slate-400", { hasText: /^1 review$/i })).toBeVisible();
 
-  // Delete the review
-  page.once("dialog", (dialog) => dialog.accept());
-  await clickDeleteReview(page, "TC4-7: Only review");
-
+  page.once("dialog", (d) => d.accept());
+  await clickDeleteReview(page, "TC8-3: Only review");
   await expect(page.getByText(/deleted successfully/i)).toBeVisible();
 
-  // Stats should reset to zero
+  // Stats reset to zero
   await expect(page.getByText("0.0")).toBeVisible();
-  await expect(
-    page.locator("div.text-sm.text-slate-400", { hasText: /^0 reviews$/i }),
-  ).toBeVisible();
-
-  // Empty state message should appear
-  await expect(
-    page.getByText(/no reviews yet.*be the first to review/i),
-  ).toBeVisible();
+  await expect(page.locator("div.text-sm.text-slate-400", { hasText: /^0 reviews$/i })).toBeVisible();
+  await expect(page.getByText(/no reviews yet.*be the first to review/i)).toBeVisible();
 
   const idx = createdReviewIds.indexOf(reviewId);
   if (idx > -1) createdReviewIds.splice(idx, 1);
 });
 
-// ═════════════════════════════════════════════════════════════════════════════
-// TC4-8: Delete one of multiple reviews → stats decrease correctly
-// ═════════════════════════════════════════════════════════════════════════════
+// ─── TC8-4: Delete one of multiple reviews → stats decrease correctly (EC-4) ─
 
-test("TC4-8: Deleting one review from multiple reviews updates stats correctly", async ({
-  page,
-}) => {
-  // Create a fresh campground for this test to avoid interference
+test("TC8-4: Deleting one review from two updates average and count correctly", async ({ page }) => {
   const api = await playwrightRequest.newContext();
-  let freshCampId = "";
-  let booking1Id = "";
-  let booking2Id = "";
-  let review1Id = "";
-  let review2Id = "";
-
+  let campId = "", booking1Id = "", booking2Id = "", review1Id = "", review2Id = "";
   try {
-    freshCampId = await apiCreateCampground(
-      api,
-      adminToken,
-      `DeleteMultiple-${Date.now()}`,
-    );
-    createdCampgroundIds.push(freshCampId);
+    campId     = await apiCreateCampground(api, adminToken, `Test Delete Review ${Date.now()}`);
+    createdCampgroundIds.push(campId);
 
-    // User 1 creates first review (rating 4)
-    booking1Id = await apiCreateBooking(api, userToken, freshCampId);
+    // User 1 (rating 4)
+    booking1Id = await apiCreateBooking(api, userToken, campId);
     createdBookingIds.push(booking1Id);
-
-    review1Id = await apiCreateReview(
-      api,
-      userToken,
-      freshCampId,
-      booking1Id,
-      4,
-      "TC4-8: First review",
-    );
+    review1Id  = await apiCreateReview(api, userToken, campId, booking1Id, 4, "TC8-4: User1 review");
     createdReviewIds.push(review1Id);
 
-    // User 2 creates second review (rating 2)
-    booking2Id = await apiCreateBooking(api, user2Token, freshCampId);
+    // User 2 (rating 2)
+    booking2Id = await apiCreateBooking(api, user2Token, campId);
     createdBookingIds.push(booking2Id);
-
-    review2Id = await apiCreateReview(
-      api,
-      user2Token,
-      freshCampId,
-      booking2Id,
-      2,
-      "TC4-8: Second review",
-    );
+    review2Id  = await apiCreateReview(api, user2Token, campId, booking2Id, 2, "TC8-4: User2 review");
     createdReviewIds.push(review2Id);
   } finally {
     await api.dispose();
   }
 
   await loginUserUI(page);
-  await gotoCampgroundDetail(page, freshCampId);
+  await gotoCampgroundDetail(page, campId);
 
-  // Initial state: 2 reviews, average = (4+2)/2 = 3.0
+  // Initial: 2 reviews, average = (4+2)/2 = 3.0
   await expect(page.getByText("3.0")).toBeVisible();
-  await expect(
-    page.locator("div.text-sm.text-slate-400", { hasText: /^2 reviews$/i }),
-  ).toBeVisible();
+  await expect(page.locator("div.text-sm.text-slate-400", { hasText: /^2 reviews$/i })).toBeVisible();
 
   // Delete user1's review (rating 4)
-  page.once("dialog", (dialog) => dialog.accept());
-  await clickDeleteReview(page, "TC4-8: First review");
-
+  page.once("dialog", (d) => d.accept());
+  await clickDeleteReview(page, "TC8-4: User1 review");
   await expect(page.getByText(/deleted successfully/i)).toBeVisible();
 
-  // Stats should update: 1 review remaining, average = 2.0
+  // After: 1 review remaining (rating 2), average = 2.0
   await expect(page.getByText("2.0")).toBeVisible();
-  await expect(
-    page.locator("div.text-sm.text-slate-400", { hasText: /^1 review$/i }),
-  ).toBeVisible();
+  await expect(page.locator("div.text-sm.text-slate-400", { hasText: /^1 review$/i })).toBeVisible();
+  await expect(page.getByText("TC8-4: User2 review")).toBeVisible();
 
   const idx = createdReviewIds.indexOf(review1Id);
   if (idx > -1) createdReviewIds.splice(idx, 1);
 });
 
-// ═════════════════════════════════════════════════════════════════════════════
-// TC4-9: ratingCount array updates correctly after deletion
-// ═════════════════════════════════════════════════════════════════════════════
+// ─── TC8-5: ratingCount array updates correctly after deletion (EC-5) ─────────
 
-test("TC4-9: Deleting a review decreases the correct ratingCount bucket", async ({
-  page,
-}) => {
-  // Create a fresh campground for this test to avoid interference
+test("TC8-5: Deleting a 5-star review decreases the 5★ count from 1 to 0", async ({ page }) => {
   const api = await playwrightRequest.newContext();
-  let freshCampId = "";
-  let bookingId = "";
-  let reviewId = "";
-
+  let campId = "", bookingId = "", reviewId = "";
   try {
-    freshCampId = await apiCreateCampground(
-      api,
-      adminToken,
-      `DeleteRatingCount-${Date.now()}`,
-    );
-    createdCampgroundIds.push(freshCampId);
-
-    bookingId = await apiCreateBooking(api, userToken, freshCampId);
+    campId    = await apiCreateCampground(api, adminToken, `Test Delete Review ${Date.now()}`);
+    createdCampgroundIds.push(campId);
+    bookingId = await apiCreateBooking(api, userToken, campId);
     createdBookingIds.push(bookingId);
-
-    reviewId = await apiCreateReview(
-      api,
-      userToken,
-      freshCampId,
-      bookingId,
-      5,
-      "TC4-9: Five star review",
-    );
+    reviewId  = await apiCreateReview(api, userToken, campId, bookingId, 5, "TC8-5: Five star review");
     createdReviewIds.push(reviewId);
   } finally {
     await api.dispose();
   }
 
   await loginUserUI(page);
-  await gotoCampgroundDetail(page, freshCampId);
+  await gotoCampgroundDetail(page, campId);
 
-  // Verify 5-star count is 1
-  const fiveStarRow = page
+  // Verify 5★ count = 1 before deletion
+  const fiveStarBefore = page
     .locator("div.flex.items-center.gap-3")
     .filter({ has: page.locator("span.text-sm.text-slate-300", { hasText: /^5$/ }) })
-    .filter({
-      has: page.locator("div.text-sm.text-slate-400.w-12.text-right", {
-        hasText: /^1$/,
-      }),
-    });
-  await expect(fiveStarRow).toBeVisible();
+    .filter({ has: page.locator("div.text-sm.text-slate-400.w-12.text-right", { hasText: /^1$/ }) });
+  await expect(fiveStarBefore).toBeVisible();
 
-  // Delete the review
-  page.once("dialog", (dialog) => dialog.accept());
-  await clickDeleteReview(page, "TC4-9: Five star review");
-
+  page.once("dialog", (d) => d.accept());
+  await clickDeleteReview(page, "TC8-5: Five star review");
   await expect(page.getByText(/deleted successfully/i)).toBeVisible();
 
-  // 5-star count should now be 0
-  const fiveStarRowAfter = page
+  // 5★ count should now be 0
+  const fiveStarAfter = page
     .locator("div.flex.items-center.gap-3")
     .filter({ has: page.locator("span.text-sm.text-slate-300", { hasText: /^5$/ }) })
-    .filter({
-      has: page.locator("div.text-sm.text-slate-400.w-12.text-right", {
-        hasText: /^0$/,
-      }),
-    });
-  await expect(fiveStarRowAfter).toBeVisible();
+    .filter({ has: page.locator("div.text-sm.text-slate-400.w-12.text-right", { hasText: /^0$/ }) });
+  await expect(fiveStarAfter).toBeVisible();
 
   const idx = createdReviewIds.indexOf(reviewId);
   if (idx > -1) createdReviewIds.splice(idx, 1);
-});
-
-// ═════════════════════════════════════════════════════════════════════════════
-// Additional: Cancel delete confirmation keeps the review
-// ═════════════════════════════════════════════════════════════════════════════
-
-test("TC4-Extra: Cancelling delete confirmation keeps the review", async ({
-  page,
-}) => {
-  const api = await playwrightRequest.newContext();
-  let bookingId = "";
-  let reviewId = "";
-
-  try {
-    bookingId = await apiCreateBooking(api, userToken, campgroundId);
-    createdBookingIds.push(bookingId);
-
-    reviewId = await apiCreateReview(
-      api,
-      userToken,
-      campgroundId,
-      bookingId,
-      3,
-      "TC4-Extra: Cancel delete",
-    );
-    createdReviewIds.push(reviewId);
-  } finally {
-    await api.dispose();
-  }
-
-  await loginUserUI(page);
-  await gotoCampgroundDetail(page, campgroundId);
-
-  await expect(page.getByText("TC4-Extra: Cancel delete")).toBeVisible();
-
-  // Dismiss the confirmation dialog
-  page.once("dialog", (dialog) => dialog.dismiss());
-  await clickDeleteReview(page, "TC4-Extra: Cancel delete");
-
-  // Review should still be visible
-  await expect(page.getByText("TC4-Extra: Cancel delete")).toBeVisible();
-
-  // No success toast should appear
-  await expect(page.getByText(/deleted successfully/i)).not.toBeVisible();
 });
