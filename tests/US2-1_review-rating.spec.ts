@@ -140,15 +140,20 @@ async function gotoCampgroundDetail(page: Page, cid: string) {
 }
 
 async function selectStars(page: Page, n: number) {
-  // MUI Rating renders a visually-hidden <input type="radio"> for each star.
-  // .check() fails because Playwright verifies post-click state and React's
-  // controlled-component update lags one tick. .click({force:true}) just
-  // dispatches the click (which fires MUI's onChange) without state
-  // verification, which is what we actually want. `force` skips the
-  // visibility check (the input has class MuiRating-visuallyHidden).
-  await page
-    .locator(`input[name="campground-rating"][value="${n}"]`)
-    .click({ force: true });
+  // MUI Rating's visually-hidden radio inputs all share the same 1×1 px
+  // bounding box. A coordinate-based click — even with force:true — always
+  // dispatches to the topmost element at that point, which ends up being
+  // star 1 regardless of which input the locator matched.
+  //
+  // Calling .click() on the DOM element directly via page.evaluate() fires
+  // the synthetic click on that exact element, triggering its onChange with
+  // the correct value so React state becomes `n`.
+  await page.evaluate((value) => {
+    const input = document.querySelector(
+      `input[name="campground-rating"][value="${value}"]`,
+    ) as HTMLInputElement | null;
+    if (input) input.click();
+  }, n);
 }
 
 async function fillComment(page: Page, text: string) {
