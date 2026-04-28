@@ -16,7 +16,23 @@ export default async function CampgroundDetailPage({
   params: Promise<{ cid: string }>;
 }) {
   const resolvedParams = await params;
-  const campgroundResponse = await getCampground(resolvedParams.cid);
+
+  let campgroundResponse;
+  try {
+    campgroundResponse = await getCampground(resolvedParams.cid);
+  } catch {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        <h1 className="text-2xl font-bold text-slate-200 mb-4">
+          Failed to fetch campground
+        </h1>
+        <Link href="/campground" className="text-orange-400 hover:underline">
+          &larr; Back to all campgrounds
+        </Link>
+      </div>
+    );
+  }
+
   const campground = campgroundResponse.data;
 
   // Fetch reviews for this campground
