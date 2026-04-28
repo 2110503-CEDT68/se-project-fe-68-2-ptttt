@@ -8,6 +8,7 @@ import NextAuthProvider from "@/providers/NextAuthProvider";
 import ReduxProvider from "@/providers/ReduxProvider";
 import Navbar from "@/components/Navbar";
 import ChatAssistant from "@/components/ChatAssistant";
+import CookieConsent from "@/components/CookieConsent";
 import getCampgrounds from "@/libs/getCampgrounds";
 import { Toaster } from "react-hot-toast";
 
@@ -48,6 +49,7 @@ export default async function RootLayout({
         </ReduxProvider>
         <ChatAssistant campgrounds={campgrounds} />
         <Toaster position="top-right" />
+        <CookieConsent />
       </body>
     </html>
   );

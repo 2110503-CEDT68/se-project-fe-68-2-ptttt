@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import userRegister from "@/libs/userRegister";
+import Link from "next/link";
 import { Eye, EyeOff, Flame } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -22,6 +23,7 @@ export default function AuthPage() {
   const [registerTel, setRegisterTel] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [registerConfirmPassword, setRegisterConfirmPassword] = useState("");
+  const [consentAccepted, setConsentAccepted] = useState(false);
 
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
@@ -61,6 +63,11 @@ export default function AuthPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!consentAccepted) {
+      toast.error("Please accept the Privacy Policy to continue.");
+      return;
+    }
+
     if (registerPassword !== registerConfirmPassword) {
       toast.error("Passwords do not match");
       return;
@@ -80,6 +87,7 @@ export default function AuthPage() {
       setRegisterTel("");
       setRegisterPassword("");
       setRegisterConfirmPassword("");
+      setConsentAccepted(false);
     } catch (error) {
       console.error("Registration error:", error);
       toast.error("Registration failed. User might already exist.");
@@ -279,9 +287,35 @@ export default function AuthPage() {
                 </button>
               </div>
             </div>
+            {/* Consent Checkbox */}
+            <div className="flex items-start gap-3 pt-1">
+              <input
+                id="consent-checkbox"
+                type="checkbox"
+                checked={consentAccepted}
+                onChange={(e) => setConsentAccepted(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded border-slate-600 bg-slate-800 accent-orange-400 cursor-pointer flex-shrink-0"
+              />
+              <label
+                htmlFor="consent-checkbox"
+                className="text-xs text-slate-400 leading-relaxed cursor-pointer select-none"
+              >
+                I agree to the{" "}
+                <Link
+                  href="/privacy"
+                  target="_blank"
+                  className="text-orange-400 hover:text-orange-300 underline underline-offset-2 transition-colors"
+                >
+                  Privacy Policy
+                </Link>{" "}
+                and consent to the collection and processing of my personal data.
+              </label>
+            </div>
+
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-orange-400 text-white font-semibold hover:bg-orange-500 transition-colors"
+              disabled={!consentAccepted}
+              className="w-full py-3 rounded-xl bg-orange-400 text-white font-semibold hover:bg-orange-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Sign Up
             </button>
