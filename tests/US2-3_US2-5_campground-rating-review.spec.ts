@@ -277,7 +277,7 @@ test.afterAll(async () => {
 // GROUP A — Catalog Card Display
 // ═══════════════════════════════════════════════════════════════════════════════
 
-test("TC 1: Campground card shows star icon, average rating 4.0, and review count", async ({ page }) => {
+test("TC7-1: Campground card shows star icon, average rating 4.0, and review count", async ({ page }) => {
   await page.goto(`${BASE_URL}/campground`);
   const card = page.getByText(CARD_RATED_NAME).locator("../..");
   await expect(card.locator("svg").first()).toBeVisible();
@@ -285,7 +285,7 @@ test("TC 1: Campground card shows star icon, average rating 4.0, and review coun
   await expect(card.getByText(/1 review/i)).toBeVisible();
 });
 
-test('TC 2: Campground card with no reviews shows "No reviews"', async ({ page }) => {
+test('TC7-2: Campground card with no reviews shows "No reviews"', async ({ page }) => {
   await page.goto(`${BASE_URL}/campground`);
   const card = page.getByText(CARD_EMPTY_NAME).locator("../..");
   await expect(card.getByText(/no reviews/i)).toBeVisible();
@@ -295,7 +295,7 @@ test('TC 2: Campground card with no reviews shows "No reviews"', async ({ page }
 // GROUP B — Detail Page: Empty State (0 reviews)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-test("TC 3: Detail page shows empty state correctly when campground has no reviews", async ({ page }) => {
+test("TC7-3: Detail page shows empty state correctly when campground has no reviews", async ({ page }) => {
   await page.goto(`${BASE_URL}/campground/${campEmptyId}`);
   await expect(page.getByText("0.0")).toBeVisible();
   await expect(page.getByText(/no reviews yet.*be the first to review/i)).toBeVisible();
@@ -306,7 +306,7 @@ test("TC 3: Detail page shows empty state correctly when campground has no revie
 // GROUP C — Detail Page: Single Review (User A, rating 4)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-test("TC 4: Detail page shows correct stats and comment for a single review", async ({ page }) => {
+test("TC7-4: Detail page shows correct stats and comment for a single review", async ({ page }) => {
   await page.goto(`${BASE_URL}/campground/${campSingleId}`);
   // Average rating and count
   await expect(page.getByText("4.0")).toBeVisible();
@@ -322,10 +322,10 @@ test("TC 4: Detail page shows correct stats and comment for a single review", as
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// GROUP D — Detail Page: Multiple Reviews (2 users, ratings 5+4+1)
+// GROUP D — Detail Page: Multiple Reviews (3 users, ratings 5+4+1)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-test("TC 5: Detail page shows correct stats, breakdown, and all comments for multiple reviews", async ({ page }) => {
+test("TC7-5: Detail page shows correct stats, breakdown, and all comments for multiple reviews", async ({ page }) => {
   // avg = (5+4+1)/3 = 3.3
   await page.goto(`${BASE_URL}/campground/${campMultiId}`);
   // Average and count
@@ -354,7 +354,7 @@ test("TC 5: Detail page shows correct stats, breakdown, and all comments for mul
 // GROUP E — Sort: Highest Rated / Lowest Rated / Most Recent
 // ═══════════════════════════════════════════════════════════════════════════════
 
-test('TC 6: Sort "Highest rated" shows 4★ review before 2★ review', async ({ page }) => {
+test('TC7-6: Sort "Highest rated" shows 4★ review before 2★ review', async ({ page }) => {
   await loginUI(page, USER_A_EMAIL, USER_A_PASSWORD);
   await gotoDetail(page, campSortId);
 
@@ -368,7 +368,7 @@ test('TC 6: Sort "Highest rated" shows 4★ review before 2★ review', async ({
   expect(highIdx).toBeLessThan(lowIdx);
 });
 
-test('TC 7: Sort "Lowest rated" shows 2★ review before 4★ review', async ({ page }) => {
+test('TC7-7: Sort "Lowest rated" shows 2★ review before 4★ review', async ({ page }) => {
   await loginUI(page, USER_A_EMAIL, USER_A_PASSWORD);
   await gotoDetail(page, campSortId);
 
@@ -382,7 +382,7 @@ test('TC 7: Sort "Lowest rated" shows 2★ review before 4★ review', async ({ 
   expect(lowIdx).toBeLessThan(highIdx);
 });
 
-test('TC 8: Sort "Most recent" shows most recently posted review first', async ({ page }) => {
+test('TC7-8: Sort "Most recent" shows most recently posted review first', async ({ page }) => {
   // User B's review was posted after User A's, so it should appear first
   await loginUI(page, USER_A_EMAIL, USER_A_PASSWORD);
   await gotoDetail(page, campSortId);
@@ -404,7 +404,7 @@ test('TC 8: Sort "Most recent" shows most recently posted review first', async (
 // GROUP F — Summary View (US2-5)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-test("TC 9: Summary view shows campground info, average rating, and all reviews", async ({ page }) => {
+test("TC7-9: Summary view shows campground info, average rating, and all reviews", async ({ page }) => {
   await page.goto(`${BASE_URL}/campground/${campSummaryId}`);
   await page.waitForLoadState("networkidle");
 
@@ -415,7 +415,7 @@ test("TC 9: Summary view shows campground info, average rating, and all reviews"
   await expect(page.getByText("Summary: Very nice.")).toBeVisible();
 });
 
-test("TC 10: Non-existent campground ID shows error message", async ({ page }) => {
+test("TC7-10: Non-existent campground ID shows error message", async ({ page }) => {
   await page.goto(`${BASE_URL}/campground/${CAMP_NONEXISTENT_ID}`);
   await page.waitForLoadState("networkidle");
   await expect(page.getByText(/failed to fetch campground/i)).toBeVisible({ timeout: 10_000 });

@@ -208,9 +208,9 @@ test.afterAll(async () => {
   }
 });
 
-// ─── TC-1: Submit valid 5-star review ────────────────────────────────────────
+// ─── TC5-1: Submit valid 5-star review ────────────────────────────────────────
 
-test('TC1-1: Post a review with rating = 5 (valid)', async ({ page }) => {
+test('TC5-1: Post a review with rating = 5 (valid)', async ({ page }) => {
   await loginUserUI(page);
   await gotoCampgroundDetail(page, campgroundId);
 
@@ -227,9 +227,9 @@ test('TC1-1: Post a review with rating = 5 (valid)', async ({ page }) => {
   if (rid) createdReviewIds.push(rid);
 });
 
-// ─── TC-2: Submit valid 1-star review (boundary low) ─────────────────────────
+// ─── TC5-2: Submit valid 1-star review (boundary low) ─────────────────────────
 
-test('TC1-2: Post a review with rating = 1 (boundary low)', async ({ page }) => {
+test('TC5-2: Post a review with rating = 1 (boundary low)', async ({ page }) => {
   await loginUserUI(page);
   await gotoCampgroundDetail(page, campgroundId);
 
@@ -253,9 +253,9 @@ test('TC1-2: Post a review with rating = 1 (boundary low)', async ({ page }) => 
   if (rid) createdReviewIds.push(rid);
 });
 
-// ─── TC-3: No rating selected → submit button disabled ───────────────────────
+// ─── TC5-3: No rating selected → submit button disabled ───────────────────────
 
-test('TC1-3: No rating selected — Post Review button is disabled', async ({ page }) => {
+test('TC5-3: No rating selected — Post Review button is disabled', async ({ page }) => {
   await loginUserUI(page);
   await gotoCampgroundDetail(page, campgroundId);
 
@@ -266,13 +266,9 @@ test('TC1-3: No rating selected — Post Review button is disabled', async ({ pa
   await expect(button).toBeDisabled();
 });
 
-// ─── TC-4: Comment empty → submit button disabled ────────────────────────────
-//
-// Included here because the rating control is meaningless without a comment
-// per the form contract. This test exists as a sanity check that the rating
-// alone does not enable submission.
+// ─── TC5-4: Comment empty → submit button disabled ────────────────────────────
 
-test('TC1-4: Rating selected but comment empty — button disabled', async ({ page }) => {
+test('TC5-4: Rating selected but comment empty — button disabled', async ({ page }) => {
   await loginUserUI(page);
   await gotoCampgroundDetail(page, campgroundId);
 
@@ -283,9 +279,9 @@ test('TC1-4: Rating selected but comment empty — button disabled', async ({ pa
   await expect(button).toBeDisabled();
 });
 
-// ─── TC-5: User without an eligible booking → rating control disabled ────────
+// ─── TC5-5: User without an eligible booking → rating control disabled ────────
 
-test('TC1-5: User without a booking for this campground — form disabled', async ({ page }, testInfo) => {
+test('TC5-5: User without a booking for this campground — form disabled', async ({ page }, testInfo) => {
   // Create a second campground that the test user has NO booking for.
   const api = await playwrightRequest.newContext();
   let extraCampId = '';
